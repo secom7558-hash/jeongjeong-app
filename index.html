@@ -422,6 +422,9 @@ $('resSend').onclick=function(){
   .catch(function(){$('errR').textContent='올리지 못했습니다. 인터넷 연결을 확인하고 「결과 올리기」를 다시 눌러 주세요. (올라간 사진부터 이어서 올립니다)'})
   .then(function(){resBusy=false;$('resSend').disabled=false;$('resSend').textContent='결과 올리기'})};
 
+/* 새 버전 자동 확인: 서버 파일의 ETag가 지난번과 다르면 한 번 새로 불러옴 (폰이 예전 화면을 붙잡고 있는 것 방지) */
+(function(){try{fetch(location.pathname,{method:'HEAD',cache:'no-store'}).then(function(r){var t=r.headers.get('etag')||r.headers.get('last-modified');if(!t)return;var o=lsGet('jr-ver');lsSet('jr-ver',t);
+  if(o&&o!==t&&!/[?&]v=/.test(location.search))location.replace(location.pathname+'?v='+Date.now())}).catch(function(){})}catch(e){}})();
 setWho(lsGet('jr-who')||'');
 </script>
 </body>
