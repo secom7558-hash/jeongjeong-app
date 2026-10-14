@@ -464,7 +464,8 @@ reloadSrv(true);setInterval(()=>{if(!document.hidden&&!$('viewer').open&&!$('xdl
 <script>
 /* ===== 분석 탭: 장소·회사·난간·월별·요청자·소요일·키워드 (직접 그린 그래프, 외부 라이브러리 없음) ===== */
 let statY=String(new Date().getFullYear()),statM='',statKw=(()=>{try{return JSON.parse(localStorage.getItem('reqlog-stat-kw')||'[]')||[]}catch(e){return[]}})();
-const KW0=['릴','몰드 키','플라스크','래들','주입컵','고리','경첩','계단','발판'],PL=['수직','수평','열처리','축로','기타'],CO2=['현대제철','현대아이엠씨'],CC={현대제철:'var(--c1)',현대아이엠씨:'var(--c2)'};
+const KW0=['난간대','릴','몰드 키','플라스크','래들','주입컵','고리','경첩','계단','발판'],PL=['수직','수평','열처리','축로','기타'],CO2=['현대제철','현대아이엠씨'],CC={현대제철:'var(--c1)',현대아이엠씨:'var(--c2)'};
+function kwRe(k){return k==='난간대'?/난간/:new RegExp(k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/\s+/g,'\\s*'))}
 function placeOf(r){const t=r.content||'';let b='기타',bi=1e9;for(const k of ['수평','수직','열처리','축로']){const i=t.indexOf(k);if(i>=0&&i<bi){bi=i;b=k}}return b}
 const sTxt=r=>(r.content||'')+' '+(r.res||'')+' '+(r.note||'');
 function sScope(){return all.filter(r=>statY==='all'||(r.reqAt.startsWith(statY)&&(!statM||r.reqAt.slice(5,7)===statM)))}
@@ -519,9 +520,9 @@ function renderStat(){
     <div class="sub" style="margin:12px 0 4px">미처리 ${wip.length}건 (전체 기간, 오래된 순)</div>${wip.slice(0,5).map(r=>`<div class="wl"><b>${Math.floor((now-new Date(r.reqAt))/864e5)}일</b><span>${fmt(r.reqAt)} · ${esc(r.nm||'')} · ${esc((r.content||'').split('\n')[0].slice(0,30))}</span></div>`).join('')||'<div class="sub">없음</div>'}</div>`;
   // 7 키워드
   const kws=KW0.concat(statKw.filter(k=>!KW0.includes(k)));
-  const kc=kws.map(k=>{const re=new RegExp(k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/\s+/g,'\\s*'));const m=rows.filter(r=>re.test(sTxt(r)));return{l:k,segs:CO2.map(c=>({v:m.filter(r=>r.co===c).length,c:CC[c],t:c})),n:m.length}}).sort((a,b)=>b.n-a.n);
+  const kc=kws.map(k=>{const re=kwRe(k);const m=rows.filter(r=>k==='난간대'?isRail(r):re.test(sTxt(r)));return{l:k,segs:CO2.map(c=>({v:m.filter(r=>r.co===c).length,c:CC[c],t:c})),n:m.length}}).sort((a,b)=>b.n-a.n);
   const c7=`<div class="stc w"><h3>요청 내용 키워드 빈도</h3><div class="sub">${per} · 요청 내용·결과·비고에 그 글자가 들어간 건수 (한 건에 여러 키워드가 들어갈 수 있어요)</div>${sLegend()}${sBars(kc)}
-    <div class="bar" style="margin-top:10px"><input id="kwIn" placeholder="키워드 추가 (예: 난간대, 용접)" style="max-width:240px"><button id="kwAdd">추가</button>${statKw.map((k,i)=>`<span class="kwc">${esc(k)}<button data-kd="${i}" aria-label="${esc(k)} 지우기">×</button></span>`).join('')}</div></div>`;
+    <div class="bar" style="margin-top:10px"><input id="kwIn" placeholder="키워드 추가 (예: 용접, 절단)" style="max-width:240px"><button id="kwAdd">추가</button>${statKw.map((k,i)=>`<span class="kwc">${esc(k)}<button data-kd="${i}" aria-label="${esc(k)} 지우기">×</button></span>`).join('')}</div></div>`;
   $('wrap').innerHTML=`<div class="st">${bar}${c1}${c3}${c4}${c5}${c6}${c2}${c7}</div>`}
 /* ---- 분석 엑셀: 표 + 그래프 그림 ---- */
 const XC={c1:'#2a78d6',c2:'#eb6834',c3:'#1baf7a',slate:'#5b7083'};
@@ -581,7 +582,7 @@ async function exportStat(){
     sheet('요청자 순위','요청자 순위 상위 10명 ('+per+')',['순위','회사','요청자','건수'],top.map(([k,v],i)=>{const[co,nm,ti]=k.split('|');return[i+1,co,nm+(ti?' '+ti:''),v]}),[8,16,22,10],pngBars('요청자 순위',top.map(([k,v])=>{const[co,nm,ti]=k.split('|');return{l:nm+(ti?' '+ti:''),segs:[{v,c:CC_X[co]||XC.slate}]}}),CO2.map(c=>[c,CC_X[c]])),760,64+top.length*28+14);
     // 키워드
     const kws=KW0.concat(statKw.filter(k=>!KW0.includes(k)));
-    const kc=kws.map(k=>{const re=new RegExp(k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/\s+/g,'\\s*'));const m=rows.filter(r=>re.test(sTxt(r)));return{l:k,segs:CO2.map(c=>({v:m.filter(r=>r.co===c).length,c:CC_X[c]})),n:m.length}}).sort((a,b)=>b.n-a.n);
+    const kc=kws.map(k=>{const re=kwRe(k);const m=rows.filter(r=>k==='난간대'?isRail(r):re.test(sTxt(r)));return{l:k,segs:CO2.map(c=>({v:m.filter(r=>r.co===c).length,c:CC_X[c]})),n:m.length}}).sort((a,b)=>b.n-a.n);
     sheet('키워드 빈도','요청 내용 키워드 빈도 ('+per+')',['키워드'].concat(CO2,['합계']),kc.map(i=>[i.l].concat(i.segs.map(x=>x.v),[i.n])),[16,14,16,10],pngBars('요청 내용 키워드 빈도',kc,CO2.map(c=>[c,CC_X[c]])),760,64+kc.length*28+14);
     // 미처리
     const wip=all.filter(isWip).sort((a,b)=>a.reqAt.localeCompare(b.reqAt)),now=Date.now();
