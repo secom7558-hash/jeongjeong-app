@@ -30,6 +30,7 @@ textarea{min-height:92px;resize:vertical}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .g3{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:8px}
 .seg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+#place{grid-template-columns:repeat(5,1fr);gap:6px}#place button{padding:14px 2px}
 .seg button{font:inherit;font-weight:700;padding:14px 4px;border:2px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);min-height:56px;line-height:1.25}
 .seg button small{display:block;font-weight:400;color:var(--mute);font-size:13px}
 .seg button[aria-pressed="true"]{border-color:var(--acc);background:var(--head)}
@@ -115,6 +116,8 @@ dialog img{display:block;max-width:94vw;max-height:80vh}
         <button type="button" data-v="수평" aria-pressed="false">수평</button>
         <button type="button" data-v="수직" aria-pressed="false">수직</button>
         <button type="button" data-v="열처리" aria-pressed="false">열처리</button>
+        <button type="button" data-v="축로" aria-pressed="false">축로</button>
+        <button type="button" data-v="기타" aria-pressed="false">기타</button>
       </div>
       <input type="text" id="detail" placeholder="자세한 장소 (예: 코팅장 앞)" style="margin-top:8px">
       <label class="f">작업 내용</label>

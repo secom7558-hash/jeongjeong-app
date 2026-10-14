@@ -464,8 +464,8 @@ reloadSrv(true);setInterval(()=>{if(!document.hidden&&!$('viewer').open&&!$('xdl
 <script>
 /* ===== 분석 탭: 장소·회사·난간·월별·요청자·소요일·키워드 (직접 그린 그래프, 외부 라이브러리 없음) ===== */
 let statY=String(new Date().getFullYear()),statM='',statKw=(()=>{try{return JSON.parse(localStorage.getItem('reqlog-stat-kw')||'[]')||[]}catch(e){return[]}})();
-const KW0=['릴','몰드 키','플라스크','래들','주입컵','고리','경첩','계단','발판'],PL=['수직','수평','열처리','미분류'],CO2=['현대제철','현대아이엠씨'],CC={현대제철:'var(--c1)',현대아이엠씨:'var(--c2)'};
-function placeOf(r){const t=r.content||'';let b='미분류',bi=1e9;for(const k of ['수평','수직','열처리']){const i=t.indexOf(k);if(i>=0&&i<bi){bi=i;b=k}}return b}
+const KW0=['릴','몰드 키','플라스크','래들','주입컵','고리','경첩','계단','발판'],PL=['수직','수평','열처리','축로','기타'],CO2=['현대제철','현대아이엠씨'],CC={현대제철:'var(--c1)',현대아이엠씨:'var(--c2)'};
+function placeOf(r){const t=r.content||'';let b='기타',bi=1e9;for(const k of ['수평','수직','열처리','축로']){const i=t.indexOf(k);if(i>=0&&i<bi){bi=i;b=k}}return b}
 const sTxt=r=>(r.content||'')+' '+(r.res||'')+' '+(r.note||'');
 function sScope(){return all.filter(r=>statY==='all'||(r.reqAt.startsWith(statY)&&(!statM||r.reqAt.slice(5,7)===statM)))}
 function sBars(items,max){ // items:[{l,segs:[{v,c,t}],note}]
@@ -496,7 +496,7 @@ function renderStat(){
   const per=statY==='all'?'전체 기간':statY+'년'+(statM?' '+(+statM)+'월':' 전체');
   const bar=`<div class="bar"><b>기간</b><select id="sY"><option value="all"${statY==='all'?' selected':''}>전체 기간</option>${yrs.map(y=>`<option value="${y}"${y===statY?' selected':''}>${y}년</option>`).join('')}</select>
     <select id="sM"${statY==='all'?' disabled':''}><option value="">1~12월 전체</option>${Array.from({length:12},(_,i)=>`<option value="${p2(i+1)}"${p2(i+1)===statM?' selected':''}>${i+1}월</option>`).join('')}</select>
-    <span style="color:var(--mute);font-size:13px">${rows.length}건 · 난간대 ${rail.length}건 · 장소는 요청 내용의 「수평·수직·열처리」 글자로 구분해요</span></div>`;
+    <span style="color:var(--mute);font-size:13px">${rows.length}건 · 난간대 ${rail.length}건 · 장소는 요청 내용의 「수평·수직·열처리·축로」 글자로 구분하고, 없으면 「기타」예요</span></div>`;
   // 1 난간대 장소별 × 회사별
   const c1=`<div class="stc"><h3>난간대 — 장소별 · 회사별</h3><div class="sub">${per} · 난간대 ${rail.length}건</div>${sLegend()}${sBars(PL.map(pl=>({l:pl,segs:byCo(rail,r=>placeOf(r)===pl)})))}</div>`;
   // 3 회사별
