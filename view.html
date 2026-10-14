@@ -106,7 +106,7 @@ tr.row{cursor:default}
 <body>
 <header>
   <h1 id="title">정정 업무요청 일지</h1>
-  <div style="display:flex;gap:8px;flex-wrap:wrap"><button id="pull" class="pri" title="정정반 직원이 폰 앱으로 올린 요청을 가져옵니다">새 요청 가져오기</button><button id="xlsx">엑셀로 내려받기</button><button id="bak">백업 저장</button><button id="rst">백업 불러오기</button><input type="file" id="rstf" accept=".json" hidden><select id="pPaper" aria-label="인쇄 용지" title="인쇄 용지" style="width:auto;padding:8px 10px;background:var(--paper)"><option value="a4p">A4 세로</option><option value="a4l">A4 가로</option><option value="a3p">A3 세로</option><option value="a3l">A3 가로</option></select><select id="pBind" aria-label="왼쪽 철 여백" title="왼쪽 철 여백 (파일철·클립보드에 끼울 자리)" style="width:auto;padding:8px 10px;background:var(--paper)"><option value="0">철 여백 없음</option><option value="15">철 여백 15mm</option><option value="20">철 여백 20mm</option><option value="25">철 여백 25mm</option><option value="30">철 여백 30mm</option></select><button id="print">인쇄</button><button class="pri" id="add">+ 요청 등록</button></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap"><button id="pull" class="pri" title="정정반 직원이 폰 앱으로 올린 요청을 가져옵니다">새 요청 가져오기</button><button id="xlsx">엑셀로 내려받기</button><button id="xstat">분석 엑셀로 내려받기</button><button id="bak">백업 저장</button><button id="rst">백업 불러오기</button><input type="file" id="rstf" accept=".json" hidden><select id="pPaper" aria-label="인쇄 용지" title="인쇄 용지" style="width:auto;padding:8px 10px;background:var(--paper)"><option value="a4p">A4 세로</option><option value="a4l">A4 가로</option><option value="a3p">A3 세로</option><option value="a3l">A3 가로</option></select><select id="pBind" aria-label="왼쪽 철 여백" title="왼쪽 철 여백 (파일철·클립보드에 끼울 자리)" style="width:auto;padding:8px 10px;background:var(--paper)"><option value="0">철 여백 없음</option><option value="15">철 여백 15mm</option><option value="20">철 여백 20mm</option><option value="25">철 여백 25mm</option><option value="30">철 여백 30mm</option></select><button id="print">인쇄</button><button class="pri" id="add">+ 요청 등록</button></div>
 </header>
 <div class="views" id="views"></div>
 <div class="tabs" id="tabs"></div>
@@ -165,7 +165,7 @@ function fmt(s){const d=new Date(s);const b=p2(d.getMonth()+1)+'월'+p2(d.getDat
 function resHtml(r){if(r.doneAt)return `<span class="ok" style="white-space:pre-wrap">${fmt(r.doneAt)} ${esc(r.res||'작업 완료')}</span>`;if(r.res)return `<span style="white-space:pre-wrap">${esc(r.res)}</span>`;return '<span class="wait">진행 중</span>'}
 function norm(r){if(!r.co&&!r.nm&&r.who){const p=r.who.trim().split(/\s+/);if(p.length>=3){r.co=p[0];r.nm=p[1];r.ti=p.slice(2).join(' ')}else if(p.length==2){r.co=p[0];r.nm=p[1];r.ti=''}else{r.co='';r.nm=p[0]||'';r.ti=''}}return r}
 function ey(){return view!=='month'&&yfilter!=='all'?yfilter:month.slice(0,4)}
-function lbl(){return view==='stat'?'분석 엑셀로 내려받기':'엑셀로 내려받기'}
+function lbl(){return '엑셀로 내려받기'}
 const RAIL=/난간/;
 function isRail(r){return r.rail===true||(r.rail!==false&&RAIL.test((r.content||'')+(r.res||'')+(r.note||'')))}
 function isWip(r){return !r.doneAt&&!r.res}
@@ -393,7 +393,8 @@ function xFill(){
 function xSel(){const y=$('xY').value,m=$('xM').value,k=document.querySelector('input[name=xK]:checked').value;
   const rows=all.filter(r=>r.reqAt.startsWith(m?y+'-'+m:y)).filter(k==='rail'?isRail:k==='wip'?isWip:()=>true);return{y,m,k,rows}}
 function xInfo(){const x=xSel();$('xInfo').textContent=x.rows.length+'건이 들어갑니다.'}
-$('xlsx').onclick=()=>{if(view==='stat'){exportStat();return}xFill();$('xdlg').showModal()};
+$('xlsx').onclick=()=>{xFill();$('xdlg').showModal()};
+$('xstat').onclick=()=>exportStat();
 $('xdlg').addEventListener('change',xInfo);
 $('xCancel').onclick=()=>$('xdlg').close();
 $('xGo').onclick=async()=>{
@@ -548,7 +549,7 @@ function pngLine(title,ms,A,R){
   return c.toDataURL('image/png').split(',')[1]}
 async function exportStat(){
   if(typeof ExcelJS==='undefined'){alert('엑셀 기능을 불러오지 못했습니다.');return}
-  const b=$('xlsx');b.disabled=true;b.textContent='만드는 중...';
+  const b=$('xstat');b.disabled=true;b.textContent='만드는 중...';
   try{
     const rows=sScope(),rail=rows.filter(isRail),per=statY==='all'?'전체 기간':statY+'년'+(statM?' '+(+statM)+'월':' 전체');
     const wb=new ExcelJS.Workbook(),thin={style:'thin',color:{argb:'FF808080'}},box={top:thin,left:thin,bottom:thin,right:thin},fnt=o=>Object.assign({name:'맑은 고딕',size:11},o||{});
@@ -590,7 +591,7 @@ async function exportStat(){
     const buf=await wb.xlsx.writeBuffer();
     dl(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),'정정 업무요청 분석('+(statY==='all'?'전체':statY)+(statM?'.'+statM:'')+').xlsx');
   }catch(e){alert('엑셀 파일을 만들지 못했습니다: '+e.message)}
-  b.disabled=false;b.textContent=lbl()}
+  b.disabled=false;b.textContent='분석 엑셀로 내려받기'}
 const CC_X={현대제철:XC.c1,현대아이엠씨:XC.c2};
 document.addEventListener('change',e=>{if(e.target.id==='sY'){statY=e.target.value;if(statY==='all')statM='';renderStat()}else if(e.target.id==='sM'){statM=e.target.value;renderStat()}});
 document.addEventListener('click',e=>{
