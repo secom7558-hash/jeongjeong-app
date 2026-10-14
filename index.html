@@ -75,7 +75,8 @@ nav button[aria-selected="true"]{color:var(--acc);box-shadow:inset 0 3px 0 var(-
 .row3{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
 .row3 img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;border:1px solid var(--line)}
 .lab{font-size:12.5px;color:var(--mute);margin-top:8px}
-.filters{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px}
+.filters{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:12px}
+.filters.v3{grid-template-columns:repeat(3,1fr)}
 .filters button{font:inherit;font-weight:700;font-size:14px;padding:10px 2px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink)}
 .filters button small{display:block;font-weight:400;font-size:12px;opacity:.85}
 .filters button[aria-pressed="true"]{background:var(--acc);color:#fff;border-color:var(--acc)}
@@ -151,6 +152,12 @@ dialog img{display:block;max-width:94vw;max-height:80vh}
     <button data-v="김건민 사원" aria-pressed="false">김건민<small>사원</small></button>
     <button data-v="이전 기록" aria-pressed="false">이전<small>기록</small></button>
   </div>
+  <div class="filters v3" id="vw">
+    <button data-v="" aria-pressed="true">모두</button>
+    <button data-v="wip" aria-pressed="false">미처리<small id="nWip"></small></button>
+    <button data-v="rail" aria-pressed="false">난간대<small id="nRail"></small></button>
+  </div>
+  <select id="mon" style="width:100%;margin-bottom:10px"></select>
   <p class="hint" id="listHint"></p>
   <button class="btn" id="reload" style="margin-bottom:12px">🔄 새로고침</button>
   <div id="list"></div>
@@ -323,17 +330,29 @@ $('again').onclick=function(){clearForm();setWho(who);$('formWrap').hidden=false
 $('cancelEdit').onclick=function(){clearForm();setWho(who);goTab('pgMine')};
 
 /* ---------- 내가 올린 기록 ---------- */
-var PAGE=20,flt='',open_={},hasMore=false;
+var PAGE=20,flt='',view='',mon=today().slice(0,7),open_={},hasMore=false;
+(function(){var d=new Date(),y=d.getFullYear(),m=d.getMonth()+1,h='<option value="">전체 기간</option>';
+  while(y>2025||(y===2025&&m>=11)){var v=y+'-'+pad(m);h+='<option value="'+v+'"'+(v===mon?' selected':'')+'>'+y+'년 '+m+'월</option>';if(--m<1){m=12;y--}}
+  $('mon').innerHTML=h})();
+$('mon').onchange=function(){mon=$('mon').value;loadList()};
 $('flt').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;flt=b.dataset.v;if(flt&&flt!=='이전 기록')setWho(flt);
   [].forEach.call($('flt').children,function(x){x.setAttribute('aria-pressed',x===b?'true':'false')});loadList()});
 $('reload').onclick=function(){loadList(true)};
 function fmt(s){if(!s)return '';var d=s.slice(0,10).split('-');return +d[1]+'/'+(+d[2])+' '+s.slice(11,16)}
 var BADGE={wait:['w','확인 대기'],chk:['c','확인 중'],done:['o','일지 반영']};
-function q(n,off){return '/rest/v1/requests?select=*'+'&writer='+(flt?'eq.':'neq.')+encodeURIComponent(flt||'이전 기록')+'&order=started_at.desc,created_at.desc&limit='+(n+1)+'&offset='+off}
+$('vw').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;view=b.dataset.v;if(view==='wip'){mon='';$('mon').value=''}
+  [].forEach.call($('vw').children,function(x){x.setAttribute('aria-pressed',x===b?'true':'false')});loadList()});
+function q(n,off){return '/rest/v1/requests?select=*'+(flt?'&writer=eq.'+encodeURIComponent(flt):(view||mon?'':'&writer=neq.'+encodeURIComponent('이전 기록')))
+  +(mon?'&started_at=gte.'+mon+'-01T00:00:00&started_at=lt.'+(function(){var y=+mon.slice(0,4),m=+mon.slice(5);if(++m>12){m=1;y++}return y+'-'+pad(m)})()+'-01T00:00:00':'')
+  +(view==='wip'?'&ended_at=is.null':view==='rail'?'&rail=eq.true':'')
+  +'&order=started_at.'+(view==='wip'?'asc':'desc')+',created_at.desc&limit='+(n+1)+'&offset='+off}
+function loadCounts(){
+  api('/rest/v1/requests?select=id&ended_at=is.null').then(function(r){$('nWip').textContent=(r||[]).length+'건'}).catch(function(){});
+  api('/rest/v1/requests?select=id&rail=eq.true').then(function(r){$('nRail').textContent=(r||[]).length+'건'}).catch(function(){})}
 /* keep=true: 지금 보이는 개수만큼 다시 불러옴(새로고침), false: 처음 20건 */
 function loadList(keep){
   var n=keep?Math.max(PAGE,rows.length):PAGE;
-  $('listHint').textContent='불러오는 중…';
+  $('listHint').textContent='불러오는 중…';loadCounts();
   return api(q(n,0)).then(function(r){r=r||[];hasMore=r.length>n;rows=r.slice(0,n);renderList()})
     .catch(function(){$('listHint').textContent='';$('list').innerHTML='<div class="empty">불러오지 못했습니다.<br>인터넷 연결을 확인하고 「새로고침」을 눌러 주세요.</div>'})}
 function loadMore(){
@@ -341,7 +360,7 @@ function loadMore(){
   api(q(PAGE,rows.length)).then(function(r){r=r||[];hasMore=r.length>PAGE;rows=rows.concat(r.slice(0,PAGE));renderList()})
     .catch(function(){if(b){b.disabled=false;b.textContent='불러오지 못했습니다. 다시 누르세요'}})}
 function renderList(){
-  $('listHint').textContent=flt==='이전 기록'?'업무홈 일지에 있던 이전 기록입니다. 보기만 할 수 있어요.':who?'수정·삭제는 '+who+' 님이 올린 「확인 대기」 기록만 할 수 있어요.':'수정·삭제하려면 위에서 본인 이름을 누르세요.';
+  $('listHint').textContent=view==='wip'?'아직 완료되지 않은 요청입니다. 오래된 순이며, 펼쳐서 「결과 올리기」를 누르세요.':view==='rail'?'난간·난간대 작업 모음입니다.':flt==='이전 기록'?'업무홈 일지에 있던 이전 기록입니다. 보기만 할 수 있어요.':who?'수정·삭제는 '+who+' 님이 올린 「확인 대기」 기록만 할 수 있어요.':'수정·삭제하려면 위에서 본인 이름을 누르세요.';
   if(!rows.length){$('list').innerHTML='<div class="empty">올린 기록이 없습니다.</div>';return}
   var h='<p class="cntline">'+rows.length+'건'+(hasMore?' 표시 중':'')+' · 눌러서 펼치기</p>';
   h+=rows.map(function(r){
