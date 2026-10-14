@@ -74,6 +74,28 @@ legend{font-weight:700;padding:0 6px}
 #pv[open]{display:flex;align-items:center;justify-content:center}
 #pv img{max-width:100%;max-height:100%;object-fit:contain}
 @media print{header,.tabs,.views{display:none}body{background:#fff;color:#000}.wrap{overflow:visible;padding:0}table{min-width:0}tr{break-inside:avoid}}
+/* ---- 분석 탭 (그래프) ---- */
+:root{--c1:#2a78d6;--c2:#eb6834;--c3:#1baf7a;--slate:#5b7083;--track:#e3e6ea}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--c1:#3987e5;--c2:#d95926;--c3:#199e70;--slate:#8aa0b3;--track:#2f363c}}
+:root[data-theme="dark"]{--c1:#3987e5;--c2:#d95926;--c3:#199e70;--slate:#8aa0b3;--track:#2f363c}
+.st{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));padding:0 16px 24px}
+.st .bar{grid-column:1/-1;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.st .bar select,.st .bar input{width:auto;padding:7px 10px;background:var(--paper)}
+.stc{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:14px 16px;position:relative;break-inside:avoid}
+.stc.w{grid-column:1/-1}
+.stc h3{margin:0 0 2px;font-size:16px}.stc .sub{color:var(--mute);font-size:12.5px;margin-bottom:10px}
+.lg{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;margin-bottom:8px}.lg i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.sb{display:grid;grid-template-columns:minmax(70px,150px) 1fr auto;gap:10px;align-items:center;margin:6px 0;font-size:14px}
+.sb .l{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sb .n{font-variant-numeric:tabular-nums;font-size:13px;text-align:right;min-width:92px}
+.sbt{display:flex;gap:2px;height:16px}.sbt>i{display:block;height:100%;min-width:3px}.sbt>i:last-child{border-radius:0 4px 4px 0}
+.tl{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.tl>div{border:1px solid var(--line);border-radius:8px;padding:8px 10px}.tl b{display:block;font-size:22px}.tl small{color:var(--mute)}
+.cob{height:8px;background:var(--track);border-radius:4px;margin-top:6px;overflow:hidden}.cob i{display:block;height:100%}
+.wl{font-size:13.5px;margin:4px 0;display:flex;gap:8px}.wl b{min-width:56px;color:var(--acc)}
+.stc details{margin-top:8px;font-size:13px}.stc table{border-collapse:collapse;margin-top:6px;font-size:13px}.stc td,.stc th{border:1px solid var(--line);padding:3px 8px;text-align:center}
+.stc .tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--paper);font-size:12.5px;padding:5px 8px;border-radius:6px;white-space:nowrap;z-index:5;display:none}
+.kwc{display:inline-flex;gap:4px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:1px 4px 1px 9px;font-size:13px}.kwc button{border:0;background:none;padding:0 4px;color:var(--mute)}
+@media print{.st .bar{display:none}.st{padding:0}}
 #pull,#bak,#rst,#add,#vl,#vr{display:none!important}
 tr.row{cursor:default}
 #srvStat{font-size:12px;color:var(--mute);align-self:center}
@@ -100,7 +122,7 @@ tr.row{cursor:default}
         <select id="ti" aria-label="직책"></select>
       </div></div>
     <label>요청내용<textarea id="content" placeholder="예: 수평 용탕받이 보수 요청" required></textarea></label>
-    <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="rail" style="width:auto"> 난간·난간대 작업으로 분류</label>
+    <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="rail" style="width:auto"> 난간대 작업으로 분류</label>
     <div><label>요청 사진<input type="file" id="rp" accept="image/*" multiple></label><div class="thumbs" id="rth"></div></div>
     <fieldset>
       <legend>결과</legend>
@@ -127,7 +149,7 @@ tr.row{cursor:default}
   <label style="display:grid;gap:4px">기간<select id="xM"></select></label>
   <div style="display:grid;gap:6px"><span>내용</span>
     <label style="display:flex;align-items:center;gap:8px"><input type="radio" name="xK" value="all" checked style="width:auto;margin:0"> 전체</label>
-    <label style="display:flex;align-items:center;gap:8px"><input type="radio" name="xK" value="rail" style="width:auto;margin:0"> 난간·난간대만</label>
+    <label style="display:flex;align-items:center;gap:8px"><input type="radio" name="xK" value="rail" style="width:auto;margin:0"> 난간대만</label>
     <label style="display:flex;align-items:center;gap:8px"><input type="radio" name="xK" value="wip" style="width:auto;margin:0"> 진행 중만</label></div>
   <small id="xInfo" style="color:var(--mute)"></small>
   <div style="display:flex;gap:8px;justify-content:flex-end"><button id="xCancel">닫기</button><button id="xGo" class="pri">내려받기</button></div>
@@ -176,9 +198,10 @@ function rowHtml(r,i,imgs){return `<tr class="row" data-id="${r.id}"><td>${i+1}<
   <td class="l" style="text-align:center">${esc(r.note||'')}${imgs(r.notePhotos,'notePhotos',r.id)}</td></tr>`}
 function render(){
   const nr=all.filter(isRail).length,nw=all.filter(isWip).length;
-  $('views').innerHTML=[['month','월별 일지',''],['rail','난간 작업',nr],['wip','진행 중',nw]].map(([v,t,n])=>`<button data-v="${v}" class="${view===v?'on':''}">${t}${n!==''?` <small>${n}</small>`:''}</button>`).join('');
+  $('views').innerHTML=[['month','월별 일지',''],['rail','난간대 작업',nr],['wip','진행 중',nw],['stat','분석','']].map(([v,t,n])=>`<button data-v="${v}" class="${view===v?'on':''}">${t}${n!==''?` <small>${n}</small>`:''}</button>`).join('');
   const [y,mo]=month.split('-');
   $('xlsx').textContent=lbl();
+  if(view==='stat'&&typeof renderStat==='function'){$('tabs').innerHTML='';$('title').textContent='정정 업무요청 분석';renderStat();return}
   const tb=$('tabs');
   let th='';
   if(view==='month'){
@@ -193,9 +216,9 @@ function render(){
   tb.innerHTML=th;$('xlsx').textContent=lbl();
   let rows,group=false;
   if(view==='month'){$('title').textContent=`${y}년 ${+mo}월 정정 업무요청 일지`;rows=all.filter(r=>r.reqAt.startsWith(month))}
-  else{group=true;$('title').textContent=view==='rail'?'난간·난간대 작업 모음':'진행 중인 요청';rows=all.filter(view==='rail'?isRail:isWip).filter(r=>yfilter==='all'||r.reqAt.startsWith(yfilter))}
+  else{group=true;$('title').textContent=view==='rail'?'난간대 작업 모음':'진행 중인 요청';rows=all.filter(view==='rail'?isRail:isWip).filter(r=>yfilter==='all'||r.reqAt.startsWith(yfilter))}
   rows=rows.slice().sort((a,b)=>a.reqAt.localeCompare(b.reqAt));
-  if(!rows.length){$('wrap').innerHTML=`<div class="empty">${view==='month'?'이 달에 등록된 요청이 없습니다.<br>오른쪽 위 “+ 요청 등록”을 눌러 추가하세요.':view==='rail'?'난간 작업 기록이 없습니다.':'진행 중인 요청이 없습니다.'}</div>`;return}
+  if(!rows.length){$('wrap').innerHTML=`<div class="empty">${view==='month'?'이 달에 등록된 요청이 없습니다.<br>오른쪽 위 “+ 요청 등록”을 눌러 추가하세요.':view==='rail'?'난간대 작업 기록이 없습니다.':'진행 중인 요청이 없습니다.'}</div>`;return}
   const imgs=(a,k,id)=>a&&a.length?`<div class="ph">${a.map((s,i)=>`<img src="${s}" data-id="${id}" data-k="${k}" data-i="${i}" alt="사진">`).join('')}</div>`:'';
   let body='',last='';
   rows.forEach((r,i)=>{
@@ -305,7 +328,7 @@ function renderPend(){
   const ph=(a,t)=>a.length?`<div class="lab">${t}</div><div class="ph">${a.map(p=>`<img src="${sThumb(sUrl(p))}" data-pu="${esc(sUrl(p))}" alt="사진">`).join('')}</div>`:'';
   $('pendL').innerHTML=pend.map(s=>`<div class="pc" data-sid="${s.id}"><div class="t"><span>${esc(fmtS(s.started_at))}${s.ended_at?' ~ '+esc(fmtS(s.ended_at)):' ~ 진행 중'}</span><span>${esc(s.places.join('·'))}${s.detail?' · '+esc(s.detail):''}</span></div>
     <div class="m">요청 ${esc([s.co,s.nm,s.ti].filter(Boolean).join(' '))} · 작성 ${esc(s.writer)}</div>
-    <div class="c">${s.result_added?'<span class="tag">결과 추가</span> ':''}${esc(s.content)}${s.rail?'<span class="tag">난간</span>':''}${s.result_added&&s.result_note?'<br>결과: '+esc(s.result_note):''}</div>${ph(s.before_photos,'작업 전')}${ph(s.after_photos,'작업 후')}
+    <div class="c">${s.result_added?'<span class="tag">결과 추가</span> ':''}${esc(s.content)}${s.rail?'<span class="tag">난간대</span>':''}${s.result_added&&s.result_note?'<br>결과: '+esc(s.result_note):''}</div>${ph(s.before_photos,'작업 전')}${ph(s.after_photos,'작업 후')}
     <div class="bt"><button class="pri" data-pa="add">${s.result_added&&findRec(s)?'결과 반영하기':'일지에 넣기'}</button>${s.result_added&&findRec(s)?'':'<button data-pa="edit">고쳐서 넣기</button>'}<button data-pa="hold" title="직원이 다시 고칠 수 있게 되돌립니다">보류</button></div></div>`).join('')}
 async function blobShrink(url){const r=await fetch(url);if(!r.ok)throw new Error('photo');const d=await shrink(await r.blob());if(!d)throw new Error('photo');return d}
 async function toRec(s){
@@ -378,7 +401,7 @@ $('xGo').onclick=async()=>{
   if(typeof ExcelJS==='undefined'){alert('엑셀 기능을 불러오지 못했습니다.');return}
   const b=$('xGo');b.disabled=true;b.textContent='만드는 중...';
   try{const wb=await buildWorkbook(await withPhotos(x.rows,b),+x.y,{month:x.m,kind:x.k});const buf=await wb.xlsx.writeBuffer();
-    const kn=x.k==='rail'?' 난간':x.k==='wip'?' 진행중':'';
+    const kn=x.k==='rail'?' 난간대':x.k==='wip'?' 진행중':'';
     dl(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),'정정 업무요청 일지('+x.y+(x.m?'.'+x.m:'')+kn+').xlsx');
     $('xdlg').close();
   }catch(e){alert('엑셀 파일을 만들지 못했습니다: '+e.message)}
@@ -439,6 +462,79 @@ async function withPhotos(sel,btn){
 reloadSrv(true);setInterval(()=>{if(!document.hidden&&!$('viewer').open&&!$('xdlg').open)reloadSrv(false)},60000);
 </script>
 <script>
+/* ===== 분석 탭: 장소·회사·난간·월별·요청자·소요일·키워드 (직접 그린 그래프, 외부 라이브러리 없음) ===== */
+let statY=String(new Date().getFullYear()),statM='',statKw=(()=>{try{return JSON.parse(localStorage.getItem('reqlog-stat-kw')||'[]')||[]}catch(e){return[]}})();
+const KW0=['릴','몰드 키','플라스크','래들','주입컵','고리','경첩','계단','발판'],PL=['수직','수평','열처리','미분류'],CO2=['현대제철','현대아이엠씨'],CC={현대제철:'var(--c1)',현대아이엠씨:'var(--c2)'};
+function placeOf(r){const t=r.content||'';let b='미분류',bi=1e9;for(const k of ['수평','수직','열처리']){const i=t.indexOf(k);if(i>=0&&i<bi){bi=i;b=k}}return b}
+const sTxt=r=>(r.content||'')+' '+(r.res||'')+' '+(r.note||'');
+function sScope(){return all.filter(r=>statY==='all'||(r.reqAt.startsWith(statY)&&(!statM||r.reqAt.slice(5,7)===statM)))}
+function sBars(items,max){ // items:[{l,segs:[{v,c,t}],note}]
+  max=max||Math.max(1,...items.map(i=>i.segs.reduce((a,x)=>a+x.v,0)));
+  return items.map(i=>{const tot=i.segs.reduce((a,x)=>a+x.v,0);
+    return `<div class="sb"><div class="l" title="${esc(i.l)}">${esc(i.l)}</div><div class="sbt" style="width:${tot/max*100}%">${i.segs.filter(x=>x.v>0).map(x=>`<i style="flex:${x.v};background:${x.c}" title="${esc(x.t||'')} ${x.v}건"></i>`).join('')}</div><div class="n">${tot}건${i.note?' <small style="color:var(--mute)">'+i.note+'</small>':''}</div></div>`}).join('')}
+const sLegend=()=>`<div class="lg">${CO2.map(c=>`<span><i style="background:${CC[c]}"></i>${c==='현대아이엠씨'?'현대아이엠씨':c}</span>`).join('')}</div>`;
+const byCo=(rows,f)=>CO2.map(c=>({v:rows.filter(r=>r.co===c&&f(r)).length,c:CC[c],t:c}));
+function sLine(){ // 월별 추이 (연도 기준, 월 선택과 무관)
+  const rows=all.filter(r=>statY==='all'||r.reqAt.startsWith(statY));
+  let ms=[];if(statY!=='all'){const nowM=new Date(),lim=+statY===nowM.getFullYear()?nowM.getMonth()+1:12;for(let i=1;i<=lim;i++)ms.push(statY+'-'+p2(i))}
+  else{const set=[...new Set(rows.map(r=>r.reqAt.slice(0,7)))].sort();if(set.length){let [y,m]=set[0].split('-').map(Number);const end=set[set.length-1];for(;;){const k=y+'-'+p2(m);ms.push(k);if(k>=end)break;if(++m>12){m=1;y++}}}}
+  if(!ms.length)return '<div class="empty">기록이 없습니다.</div>';
+  const A=ms.map(m=>rows.filter(r=>r.reqAt.startsWith(m)).length),R=ms.map(m=>rows.filter(r=>r.reqAt.startsWith(m)&&isRail(r)).length);
+  const W=640,H=230,L=34,Rm=70,T=14,B=28,mx=Math.max(4,Math.ceil(Math.max(...A)/5)*5),X=i=>L+(ms.length>1?i*(W-L-Rm)/(ms.length-1):0),Y=v=>T+(H-T-B)*(1-v/mx);
+  const grid=[0,.25,.5,.75,1].map(f=>{const v=Math.round(mx*f),y=Y(v);return `<line x1="${L}" x2="${W-Rm+10}" y1="${y}" y2="${y}" stroke="var(--line)" stroke-opacity=".5"/><text x="${L-6}" y="${y+4}" text-anchor="end" font-size="11" fill="var(--mute)">${v}</text>`}).join('');
+  const xl=ms.map((m,i)=>(ms.length>12&&i%2)?'':`<text x="${X(i)}" y="${H-8}" text-anchor="middle" font-size="11" fill="var(--mute)">${+m.slice(5)}월</text>`).join('');
+  const ln=(a,c)=>`<polyline points="${a.map((v,i)=>X(i)+','+Y(v)).join(' ')}" fill="none" stroke="${c}" stroke-width="2" stroke-linejoin="round"/>`+a.map((v,i)=>`<circle cx="${X(i)}" cy="${Y(v)}" r="4" fill="${c}" stroke="var(--paper)" stroke-width="2"/>`).join('');
+  const last=ms.length-1;
+  const hits=ms.map((m,i)=>`<rect x="${X(i)-(W-L-Rm)/Math.max(1,ms.length-1)/2}" y="${T}" width="${(W-L-Rm)/Math.max(1,ms.length-1)}" height="${H-T-B}" fill="transparent" data-i="${i}"/>`).join('');
+  return `<div class="lg"><span><i style="background:var(--slate)"></i>전체</span><span><i style="background:var(--c3)"></i>난간대</span></div>
+  <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block" id="stLine" data-m='${JSON.stringify(ms)}' data-a='${JSON.stringify(A)}' data-r='${JSON.stringify(R)}'>${grid}${xl}${ln(A,'var(--slate)')}${ln(R,'var(--c3)')}
+  <text x="${X(last)+10}" y="${Y(A[last])+4}" font-size="12.5" fill="var(--ink)">전체 ${A[last]}</text><text x="${X(last)+10}" y="${Y(R[last])+(Math.abs(Y(A[last])-Y(R[last]))<14?16:4)}" font-size="12.5" fill="var(--ink)">난간대 ${R[last]}</text>${hits}</svg><div class="tip" id="stTip"></div>
+  <details><summary>표로 보기</summary><table><tr><th>월</th>${ms.map(m=>`<th>${+m.slice(5)}월</th>`).join('')}</tr><tr><th>전체</th>${A.map(v=>`<td>${v}</td>`).join('')}</tr><tr><th>난간대</th>${R.map(v=>`<td>${v}</td>`).join('')}</tr></table></details>`}
+function sMed(a){a=a.slice().sort((x,y)=>x-y);const n=a.length;return n?(n%2?a[(n-1)/2]:(a[n/2-1]+a[n/2])/2):0}
+function renderStat(){
+  const rows=sScope(),rail=rows.filter(isRail),yrs=[...new Set(all.map(r=>r.reqAt.slice(0,4)).concat(String(new Date().getFullYear())))].sort().reverse();
+  const per=statY==='all'?'전체 기간':statY+'년'+(statM?' '+(+statM)+'월':' 전체');
+  const bar=`<div class="bar"><b>기간</b><select id="sY"><option value="all"${statY==='all'?' selected':''}>전체 기간</option>${yrs.map(y=>`<option value="${y}"${y===statY?' selected':''}>${y}년</option>`).join('')}</select>
+    <select id="sM"${statY==='all'?' disabled':''}><option value="">1~12월 전체</option>${Array.from({length:12},(_,i)=>`<option value="${p2(i+1)}"${p2(i+1)===statM?' selected':''}>${i+1}월</option>`).join('')}</select>
+    <span style="color:var(--mute);font-size:13px">${rows.length}건 · 난간대 ${rail.length}건 · 장소는 요청 내용의 「수평·수직·열처리」 글자로 구분해요</span></div>`;
+  // 1 난간대 장소별 × 회사별
+  const c1=`<div class="stc"><h3>난간대 — 장소별 · 회사별</h3><div class="sub">${per} · 난간대 ${rail.length}건</div>${sLegend()}${sBars(PL.map(pl=>({l:pl,segs:byCo(rail,r=>placeOf(r)===pl)})))}</div>`;
+  // 3 회사별
+  const c3=`<div class="stc"><h3>회사별 요청 건수와 난간대 비율</h3><div class="sub">${per}</div><div class="tl">${CO2.map(c=>{const n=rows.filter(r=>r.co===c).length,k=rail.filter(r=>r.co===c).length,pc=n?Math.round(k/n*100):0;return `<div><small>${c}</small><b>${n}건</b><small>난간대 ${k}건 · ${pc}%</small><div class="cob"><i style="width:${pc}%;background:${CC[c]}"></i></div></div>`}).join('')}</div></div>`;
+  // 4 장소별 전체
+  const c4=`<div class="stc"><h3>장소별 요청 건수</h3><div class="sub">${per}</div>${sLegend()}${sBars(PL.map(pl=>({l:pl,segs:byCo(rows,r=>placeOf(r)===pl),note:'난간대 '+rail.filter(r=>placeOf(r)===pl).length})))}</div>`;
+  // 2 월별
+  const c2=`<div class="stc w"><h3>월별 추이</h3><div class="sub">${statY==='all'?'전체 기간':statY+'년'} · 전체 요청과 난간대 건수</div>${sLine()}</div>`;
+  // 5 요청자
+  const pm={};rows.forEach(r=>{const k=(r.co||'')+'|'+(r.nm||'')+'|'+(r.ti||'');pm[k]=(pm[k]||0)+1});
+  const top=Object.entries(pm).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([k,v])=>{const [co,nm,ti]=k.split('|');return{l:nm+(ti?' '+ti:''),segs:[{v,c:CC[co]||'var(--slate)',t:co}],note:co==='현대아이엠씨'?'아이엠씨':''}});
+  const c5=`<div class="stc"><h3>요청자 순위 (상위 10명)</h3><div class="sub">${per}</div>${sLegend()}${sBars(top)}</div>`;
+  // 6 소요일
+  const du=rows.filter(r=>r.doneAt).map(r=>(new Date(r.doneAt)-new Date(r.reqAt))/864e5).filter(d=>d>=0&&d<400);
+  const avg=du.length?du.reduce((a,b)=>a+b,0)/du.length:0,same=du.filter(d=>d<1).length;
+  const longest=rows.filter(r=>r.doneAt).map(r=>({r,d:(new Date(r.doneAt)-new Date(r.reqAt))/864e5})).filter(x=>x.d>=0&&x.d<400).sort((a,b)=>b.d-a.d)[0];
+  const wip=all.filter(isWip).sort((a,b)=>a.reqAt.localeCompare(b.reqAt)),now=Date.now();
+  const c6=`<div class="stc"><h3>처리 소요일</h3><div class="sub">${per} · 완료된 ${du.length}건 기준</div><div class="tl"><div><small>평균</small><b>${avg.toFixed(1)}일</b></div><div><small>중간값</small><b>${sMed(du).toFixed(1)}일</b></div><div><small>당일 완료</small><b>${du.length?Math.round(same/du.length*100):0}%</b><small>${same}건</small></div></div>
+    ${longest?`<div class="wl"><b>최장</b><span>${longest.d.toFixed(1)}일 · ${esc((longest.r.content||'').split('\n')[0].slice(0,34))}</span></div>`:''}
+    <div class="sub" style="margin:12px 0 4px">미처리 ${wip.length}건 (전체 기간, 오래된 순)</div>${wip.slice(0,5).map(r=>`<div class="wl"><b>${Math.floor((now-new Date(r.reqAt))/864e5)}일</b><span>${fmt(r.reqAt)} · ${esc(r.nm||'')} · ${esc((r.content||'').split('\n')[0].slice(0,30))}</span></div>`).join('')||'<div class="sub">없음</div>'}</div>`;
+  // 7 키워드
+  const kws=KW0.concat(statKw.filter(k=>!KW0.includes(k)));
+  const kc=kws.map(k=>{const re=new RegExp(k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/\s+/g,'\\s*'));const m=rows.filter(r=>re.test(sTxt(r)));return{l:k,segs:CO2.map(c=>({v:m.filter(r=>r.co===c).length,c:CC[c],t:c})),n:m.length}}).sort((a,b)=>b.n-a.n);
+  const c7=`<div class="stc w"><h3>요청 내용 키워드 빈도</h3><div class="sub">${per} · 요청 내용·결과·비고에 그 글자가 들어간 건수 (한 건에 여러 키워드가 들어갈 수 있어요)</div>${sLegend()}${sBars(kc)}
+    <div class="bar" style="margin-top:10px"><input id="kwIn" placeholder="키워드 추가 (예: 난간대, 용접)" style="max-width:240px"><button id="kwAdd">추가</button>${statKw.map((k,i)=>`<span class="kwc">${esc(k)}<button data-kd="${i}" aria-label="${esc(k)} 지우기">×</button></span>`).join('')}</div></div>`;
+  $('wrap').innerHTML=`<div class="st">${bar}${c1}${c3}${c4}${c5}${c6}${c2}${c7}</div>`}
+document.addEventListener('change',e=>{if(e.target.id==='sY'){statY=e.target.value;if(statY==='all')statM='';renderStat()}else if(e.target.id==='sM'){statM=e.target.value;renderStat()}});
+document.addEventListener('click',e=>{
+  if(e.target.id==='kwAdd'){const v=($('kwIn').value||'').trim();if(v&&!statKw.includes(v)&&!KW0.includes(v)){statKw.push(v);try{localStorage.setItem('reqlog-stat-kw',JSON.stringify(statKw))}catch(_){}}renderStat();return}
+  const d=e.target.closest('[data-kd]');if(d){statKw.splice(+d.dataset.kd,1);try{localStorage.setItem('reqlog-stat-kw',JSON.stringify(statKw))}catch(_){}renderStat()}});
+document.addEventListener('keydown',e=>{if(e.target.id==='kwIn'&&e.key==='Enter')$('kwAdd').click()});
+document.addEventListener('mousemove',e=>{const sv=e.target.closest&&e.target.closest('#stLine');const tip=$('stTip');if(!tip)return;
+  if(!sv){tip.style.display='none';return}
+  const h=e.target.closest('rect[data-i]');if(!h){tip.style.display='none';return}
+  const i=+h.dataset.i,ms=JSON.parse(sv.dataset.m),A=JSON.parse(sv.dataset.a),R=JSON.parse(sv.dataset.r),card=sv.closest('.stc').getBoundingClientRect();
+  tip.innerHTML=`${ms[i].slice(0,4)}년 ${+ms[i].slice(5)}월 · 전체 ${A[i]}건 · 난간대 ${R[i]}건`;tip.style.display='block';tip.style.left=Math.min(card.width-230,Math.max(8,e.clientX-card.left+12))+'px';tip.style.top=(e.clientY-card.top-34)+'px'});
+</script>
+<script>
 async function buildWorkbook(all,year,opt){
   opt=opt||{};const OM=opt.month||'',OK=opt.kind||'all';
   const wb=new ExcelJS.Workbook();
@@ -490,16 +586,16 @@ async function buildWorkbook(all,year,opt){
   const rail=typeof isRail==='function'?isRail:r=>/난간/.test((r.content||'')+(r.res||'')+(r.note||''));
   const wip=typeof isWip==='function'?isWip:r=>!r.doneAt&&!r.res;
   const flt=OK==='rail'?rail:OK==='wip'?wip:()=>true;
-  const tag=OK==='rail'?' 난간·난간대 작업':OK==='wip'?' 진행 중인 요청':' 정정 업무요청 일지';
+  const tag=OK==='rail'?' 난간대 작업':OK==='wip'?' 진행 중인 요청':' 정정 업무요청 일지';
   const yr=r=>r.reqAt.startsWith(String(year));
   if(OM){ // 한 달만
     fill(wb.addWorksheet(year+'.'+OM),year+'년 '+(+OM)+'월'+tag,sortR(all.filter(r=>r.reqAt.startsWith(year+'-'+OM)&&flt(r))),OK!=='all');
   }else if(OK==='all'){ // 연간 전체 (기존 방식)
     for(let i=1;i<=12;i++){const m=year+'-'+p2(i);fill(wb.addWorksheet(year+'.'+p2(i)),year+'년 '+i+'월 정정 업무요청 일지',sortR(all.filter(r=>r.reqAt.startsWith(m))),false)}
-    fill(wb.addWorksheet('난간 작업'),year+'년 난간·난간대 작업 모음',sortR(all.filter(r=>rail(r)&&yr(r))),true);
+    fill(wb.addWorksheet('난간대 작업'),year+'년 난간대 작업 모음',sortR(all.filter(r=>rail(r)&&yr(r))),true);
     fill(wb.addWorksheet('진행 중'),year+'년 진행 중인 요청',sortR(all.filter(r=>wip(r)&&yr(r))),true);
-  }else{ // 연간 난간만 / 진행 중만: 모음 시트 + 월별 시트
-    fill(wb.addWorksheet(OK==='rail'?'난간 전체':'진행 중 전체'),year+'년'+tag+' (전체)',sortR(all.filter(r=>flt(r)&&yr(r))),true);
+  }else{ // 연간 난간대만 / 진행 중만: 모음 시트 + 월별 시트
+    fill(wb.addWorksheet(OK==='rail'?'난간대 전체':'진행 중 전체'),year+'년'+tag+' (전체)',sortR(all.filter(r=>flt(r)&&yr(r))),true);
     for(let i=1;i<=12;i++){const m=year+'-'+p2(i),rs=all.filter(r=>r.reqAt.startsWith(m)&&flt(r));if(rs.length)fill(wb.addWorksheet(year+'.'+p2(i)),year+'년 '+i+'월'+tag,sortR(rs),true)}
   }
   return wb;
