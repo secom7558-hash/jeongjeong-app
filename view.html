@@ -498,7 +498,7 @@ function renderStat(){
   const per=statY==='all'?'전체 기간':statY+'년'+(statM?' '+(+statM)+'월':' 전체');
   const bar=`<div class="bar"><b>기간</b><select id="sY"><option value="all"${statY==='all'?' selected':''}>전체 기간</option>${yrs.map(y=>`<option value="${y}"${y===statY?' selected':''}>${y}년</option>`).join('')}</select>
     <select id="sM"${statY==='all'?' disabled':''}><option value="">1~12월 전체</option>${Array.from({length:12},(_,i)=>`<option value="${p2(i+1)}"${p2(i+1)===statM?' selected':''}>${i+1}월</option>`).join('')}</select>
-    <span style="color:var(--mute);font-size:13px">${rows.length}건 · 난간대 ${rail.length}건 · 장소는 요청 내용의 「수평·수직·열처리·축로」 글자로 구분하고, 없으면 「기타」예요</span></div>`;
+    <span style="color:var(--mute);font-size:13px">${rows.length}건 · 난간대 ${rail.length}건 · 장소는 요청 내용의 「수평·수직·열처리·축로」 글자로 구분하고, 없으면 「기타」입니다</span></div>`;
   // 1 난간대 장소별 × 회사별
   const c1=`<div class="stc"><h3>난간대 — 장소별 · 회사별</h3><div class="sub">${per} · 난간대 ${rail.length}건</div>${sLegend()}${sBars(PL.map(pl=>({l:pl,segs:byCo(rail,r=>placeOf(r)===pl)})))}</div>`;
   // 3 회사별
@@ -522,7 +522,7 @@ function renderStat(){
   // 7 키워드
   const kws=KW0.concat(statKw.filter(k=>!KW0.includes(k)));
   const kc=kws.map(k=>{const re=kwRe(k);const m=rows.filter(r=>k==='난간대'?isRail(r):re.test(sTxt(r)));return{l:k,segs:CO2.map(c=>({v:m.filter(r=>r.co===c).length,c:CC[c],t:c})),n:m.length}}).sort((a,b)=>b.n-a.n);
-  const c7=`<div class="stc w"><h3>요청 내용 키워드 빈도</h3><div class="sub">${per} · 요청 내용·결과·비고에 그 글자가 들어간 건수 (한 건에 여러 키워드가 들어갈 수 있어요)</div>${sLegend()}${sBars(kc)}
+  const c7=`<div class="stc w"><h3>요청 내용 키워드 빈도</h3><div class="sub">${per} · 요청 내용·결과·비고에 그 글자가 들어간 건수 (한 건에 여러 키워드가 들어갈 수 있습니다)</div>${sLegend()}${sBars(kc)}
     <div class="bar" style="margin-top:10px"><input id="kwIn" placeholder="키워드 추가 (예: 용접, 절단)" style="max-width:240px"><button id="kwAdd">추가</button>${statKw.map((k,i)=>`<span class="kwc">${esc(k)}<button data-kd="${i}" aria-label="${esc(k)} 지우기">×</button></span>`).join('')}</div></div>`;
   $('wrap').innerHTML=`<div class="st">${bar}${c1}${c3}${c4}${c5}${c6}${c2}${c7}</div>`}
 /* ---- 분석 엑셀: 표 + 그래프 그림 ---- */
