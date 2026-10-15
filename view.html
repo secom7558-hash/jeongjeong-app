@@ -612,7 +612,9 @@ async function exportStat(){
     // ---- 5 요청자
     const pm={};rows.forEach(x=>{const k=(x.co||'')+'|'+(x.nm||'')+'|'+(x.ti||'');pm[k]=(pm[k]||0)+1});
     const top=Object.entries(pm).sort((a,b)=>b[1]-a[1]).slice(0,10);
-    secBlock('5. 요청자 순위 (상위 10명)',['순위','회사','요청자','건수'],top.map(([k,v],i)=>{const[co,nm,ti]=k.split('|');return[i+1,co,nm+(ti?' '+ti:''),v]}),()=>pngBars(top.map(([k,v])=>{const[co,nm,ti]=k.split('|');return{l:nm+(ti?' '+ti:''),segs:[{v,c:CC_X[co]||XC.slate}]}}),COL,540),false);
+    {const r5=r+1;
+    secBlock('5. 요청자 순위 (상위 10명)',['순위','회사','요청자','','건수'],top.map(([k,v],i)=>{const[co,nm,ti]=k.split('|');return[i+1,co,nm+(ti?' '+ti:''),'',v]}),()=>pngBars(top.map(([k,v])=>{const[co,nm,ti]=k.split('|');return{l:nm+(ti?' '+ti:''),segs:[{v,c:CC_X[co]||XC.slate}]}}),COL,540),false);
+    for(let i=0;i<=top.length;i++)ws.mergeCells(r5+i,3,r5+i,4)}
     // ---- 6 키워드
     const kws=KW0.concat(statKw.filter(k=>!KW0.includes(k)));
     const kc=kws.map(k=>{const re=kwRe(k);const m=rows.filter(x=>k==='난간대'?isRail(x):re.test(sTxt(x)));return{l:k,segs:CO2.map(c=>({v:m.filter(x=>x.co===c).length,c:CC_X[c]})),n:m.length}}).sort((a,b)=>b.n-a.n);
@@ -630,11 +632,16 @@ async function exportStat(){
     ws.pageSetup.printArea='A1:L'+r;
     // ---- 원자료
     const w2=wb.addWorksheet('원자료 (기간 내 전체)',{views:[{state:'frozen',ySplit:1}]});
-    w2.columns=[{header:'요청일시',width:17},{header:'완료일시',width:17},{header:'소요일',width:9},{header:'회사',width:14},{header:'요청자',width:16},{header:'장소',width:9},{header:'난간대',width:8},{header:'요청 내용 / 결과',width:70}];
-    rows.slice().sort((a,b)=>a.reqAt.localeCompare(b.reqAt)).forEach(x=>{const dd=x.doneAt?(new Date(x.doneAt)-new Date(x.reqAt))/864e5:null;w2.addRow([x.reqAt.replace('T',' '),x.doneAt?x.doneAt.replace('T',' '):'',dd!=null&&dd>=0?+dd.toFixed(1):'',x.co||'',(x.nm||'')+(x.ti?' '+x.ti:''),placeOf(x),isRail(x)?'○':'',(x.content||'')+(x.res?'\n결과: '+x.res:'')])});
+    const WC=62,WR=34;
+    w2.columns=[{header:'요청일시',width:17},{header:'완료일시',width:17},{header:'소요일',width:9},{header:'회사',width:14},{header:'요청자',width:22},{header:'장소',width:9},{header:'난간대',width:8},{header:'요청 내용',width:WC},{header:'결과',width:WR}];
+    const dw=t=>[...String(t)].reduce((n,ch)=>n+(/[^\x00-\xff]/.test(ch)?2:1),0),lines=(t,w)=>String(t||'').split('\n').reduce((n,l)=>n+Math.max(1,Math.ceil(dw(l)/(w-2))),0);
+    rows.slice().sort((a,b)=>a.reqAt.localeCompare(b.reqAt)).forEach(x=>{const dd=x.doneAt?(new Date(x.doneAt)-new Date(x.reqAt))/864e5:null;
+      const res=x.doneAt?(x.res||'작업 완료'):(x.res||'진행 중'),row=w2.addRow([x.reqAt.replace('T',' '),x.doneAt?x.doneAt.replace('T',' '):'',dd!=null&&dd>=0?+dd.toFixed(1):'',x.co||'',(x.nm||'')+(x.ti?' '+x.ti:''),placeOf(x),isRail(x)?'○':'',x.content||'',res]);
+      row.height=Math.max(2,lines(x.content,WC),lines(res,WR))*15+4});
+    w2.getRow(1).height=24;
     w2.getRow(1).eachCell(c=>{c.font=fnt({bold:true});c.fill=fillC(HEADF);c.alignment={horizontal:'center',vertical:'middle'};c.border=box});
-    w2.eachRow((row,i)=>{if(i>1)row.eachCell((c,j)=>{c.font=fnt();c.border=box;c.alignment={vertical:'top',wrapText:true,horizontal:j===8?'left':'center'}})});
-    w2.autoFilter={from:'A1',to:'H1'};w2.pageSetup={orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:0,paperSize:9};
+    w2.eachRow((row,i)=>{if(i>1)row.eachCell((c,j)=>{c.font=fnt();c.border=box;c.alignment={vertical:'middle',wrapText:true,horizontal:(j===8||j===9)?'left':'center',indent:(j===8||j===9)?1:0}})});
+    w2.autoFilter={from:'A1',to:'I1'};w2.pageSetup={orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:0,paperSize:9};
     const buf=await wb.xlsx.writeBuffer();
     dl(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),'정정 업무요청 분석('+(statY==='all'?'전체':statY)+(statM?'.'+statM:'')+').xlsx');
   }catch(e){alert('엑셀 파일을 만들지 못했습니다: '+e.message)}
