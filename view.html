@@ -302,7 +302,7 @@ $('save').onclick=()=>{
   if($('rail').checked)rec.rail=true;else if(RAIL.test(rec.content+rec.res+rec.note))rec.rail=false;
   all=all.filter(r=>r.id!==rec.id);all.push(rec);put(rec);
   rec.who=[rec.co,rec.nm,rec.ti].filter(Boolean).join(' ');put(rec);localStorageSet('lastCo',rec.co);
-  month=rec.reqAt.slice(0,7);if(ps){pend=pend.filter(x=>x.id!==ps);finishSrv([ps])}$('dlg').close();render();
+  month=rec.reqAt.slice(0,7);if(ps){pend=pend.filter(x=>x.id!==ps);pushFix(ps,rec).finally(()=>finishSrv([ps]))}$('dlg').close();render();
 };
 $('del').onclick=()=>{
   if(cur&&confirm('이 요청을 삭제할까요?')){all=all.filter(r=>r.id!==cur.id);rm(cur.id);$('dlg').close();render()}
@@ -341,6 +341,14 @@ async function toRec(s){
   if(s.rail)rec.rail=true;else if(RAIL.test(rec.content+rec.note))rec.rail=false;
   rec.who=[rec.co,rec.nm,rec.ti].filter(Boolean).join(' ');return rec}
 function putWait(rec){return new Promise(res=>{if(!db)return res();try{const tx=db.transaction('r','readwrite');tx.objectStore('r').put(rec);tx.oncomplete=()=>res();tx.onerror=()=>res()}catch(e){res()}})}
+/* 「고쳐서 넣기」로 저장하면 서버 기록도 같이 고침 (직원 앱·팀장님 화면에 반영). 사진은 서버에서 바뀌지 않음 */
+async function pushFix(id,rec){
+  let t=(rec.content||'').trim(),pl=[],detail='';
+  const m=/^\[([^\]]*)\]\s*([\s\S]*)$/.exec(t);
+  if(m){pl=m[1].split(/[·,\s]+/).filter(x=>['수평','수직','열처리','축로','기타'].includes(x));t=m[2].trim();const d=/^([\s\S]*?) — ([\s\S]*)$/.exec(t);if(d){detail=d[1].trim();t=d[2].trim()}}
+  if(!t)t=(rec.content||'').trim();
+  try{await srpc('fix_request',{p_id:id,p_started:rec.reqAt+':00',p_ended:rec.doneAt?rec.doneAt+':00':null,p_co:rec.co||'',p_nm:rec.nm||'',p_ti:rec.ti||'',p_places:pl,p_detail:detail,p_content:t,p_rail:isRail(rec),p_result:rec.res||''})}
+  catch(e){alert('일지에는 저장했지만 서버(직원 앱·팀장님 화면)의 내용은 고치지 못했습니다.\n인터넷 연결을 확인하고, 필요하면 알려 주세요.')}}
 async function finishSrv(ids){try{await srpc('finish_requests',{ids})}catch(e){alert('일지에는 들어갔지만 서버의 표시를 바꾸지 못했습니다.\n다음에 「새 요청 가져오기」를 누르면 자동으로 정리됩니다.')}updatePull()}
 function legacyId(sid){const m=/^00000000-0000-4000-8000-([0-9a-f]{12})$/.exec(sid);if(!m)return null;const n=parseInt(m[1],16),B=0xF00000000000;return n>=B?'imp-'+String(n-B).padStart(4,'0'):String(n)}
 function findRec(s){const lg=legacyId(s.id);return all.find(r=>r.id==='srv-'+s.id)||(lg&&all.find(r=>r.id===lg))}
@@ -529,65 +537,104 @@ function renderStat(){
 const XC={c1:'#2a78d6',c2:'#eb6834',c3:'#1baf7a',slate:'#5b7083'};
 function cvs(W,H){const c=document.createElement('canvas'),k=2;c.width=W*k;c.height=H*k;const g=c.getContext('2d');g.scale(k,k);g.fillStyle='#fff';g.fillRect(0,0,W,H);g.textBaseline='middle';return{c,g}}
 const FONT='"맑은 고딕","Apple SD Gothic Neo","Noto Sans KR",sans-serif';
-function pngBars(title,items,legend){ // items:[{l,segs:[{v,c}]}]
-  const W=760,rowH=28,top=legend?64:40,H=top+items.length*rowH+14,{c,g}=cvs(W,H),L=170,R=90,max=Math.max(1,...items.map(i=>i.segs.reduce((a,x)=>a+x.v,0)));
-  g.fillStyle='#1c2228';g.font='bold 16px '+FONT;g.textAlign='left';g.fillText(title,14,20);
-  if(legend){let x=14;g.font='13px '+FONT;legend.forEach(([n,col])=>{g.fillStyle=col;g.fillRect(x,40,12,12);g.fillStyle='#1c2228';g.fillText(n,x+18,46);x+=g.measureText(n).width+44})}
-  items.forEach((it,i)=>{const y=top+i*rowH+rowH/2;g.fillStyle='#1c2228';g.font='13px '+FONT;g.textAlign='right';g.fillText(it.l.length>12?it.l.slice(0,12)+'…':it.l,L-10,y);
+function pngBars(items,legend,W){ // items:[{l,segs:[{v,c}]}] — 보고서용(제목 없음)
+  W=W||500;const rowH=26,top=legend?30:8,H=top+items.length*rowH+10,{c,g}=cvs(W,H),L=Math.round(W*.27),R=Math.round(W*.14),max=Math.max(1,...items.map(i=>i.segs.reduce((a,x)=>a+x.v,0)));
+  if(legend){let x=8;g.font='12.5px '+FONT;g.textAlign='left';legend.forEach(([n,col])=>{g.fillStyle=col;g.fillRect(x,10,12,12);g.fillStyle='#1c2228';g.fillText(n,x+18,16);x+=g.measureText(n).width+38})}
+  items.forEach((it,i)=>{const y=top+i*rowH+rowH/2;g.fillStyle='#1c2228';g.font='13px '+FONT;g.textAlign='right';g.fillText(it.l.length>10?it.l.slice(0,10)+'…':it.l,L-10,y);
     let x=L;const tot=it.segs.reduce((a,v)=>a+v.v,0);it.segs.filter(v=>v.v>0).forEach(v=>{const w=Math.max(3,v.v/max*(W-L-R));g.fillStyle=v.c;g.fillRect(x,y-8,w,16);x+=w+2});
-    g.textAlign='left';g.fillStyle='#1c2228';g.fillText(tot+'건',x+6,y)});
-  return c.toDataURL('image/png').split(',')[1]}
-function pngLine(title,ms,A,R){
-  const W=760,H=300,{c,g}=cvs(W,H),L=44,Rm=80,T=56,B=34,mx=Math.max(4,Math.ceil(Math.max(...A)/5)*5),X=i=>L+(ms.length>1?i*(W-L-Rm)/(ms.length-1):0),Y=v=>T+(H-T-B)*(1-v/mx);
-  g.fillStyle='#1c2228';g.font='bold 16px '+FONT;g.textAlign='left';g.fillText(title,14,20);
-  g.font='13px '+FONT;[['전체',XC.slate],['난간대',XC.c3]].forEach(([n,col],i)=>{g.fillStyle=col;g.fillRect(14+i*80,34,12,12);g.fillStyle='#1c2228';g.fillText(n,32+i*80,40)});
+    g.textAlign='left';g.fillStyle='#1c2228';g.font='bold 13px '+FONT;g.fillText(tot+'건',x+6,y)});
+  return{b64:c.toDataURL('image/png').split(',')[1],w:W,h:H}}
+function pngLine(ms,A,R,W,H){
+  W=W||500;H=H||260;const {c,g}=cvs(W,H),L=40,Rm=84,T=36,B=30,mx=Math.max(4,Math.ceil(Math.max(...A)/5)*5),X=i=>L+(ms.length>1?i*(W-L-Rm)/(ms.length-1):0),Y=v=>T+(H-T-B)*(1-v/mx);
+  g.font='12.5px '+FONT;g.textAlign='left';[['전체',XC.slate],['난간대',XC.c3]].forEach(([n,col],i)=>{g.fillStyle=col;g.fillRect(8+i*76,10,12,12);g.fillStyle='#1c2228';g.fillText(n,26+i*76,16)});
   g.strokeStyle='#d5d9dd';g.lineWidth=1;g.textAlign='right';g.fillStyle='#66707a';g.font='12px '+FONT;
   [0,.25,.5,.75,1].forEach(f=>{const v=Math.round(mx*f),y=Y(v);g.beginPath();g.moveTo(L,y);g.lineTo(W-Rm+10,y);g.stroke();g.fillText(v,L-8,y)});
   g.textAlign='center';ms.forEach((m,i)=>{if(ms.length>12&&i%2)return;g.fillText(+m.slice(5)+'월',X(i),H-14)});
   const ln=(a,col)=>{g.strokeStyle=col;g.lineWidth=2;g.beginPath();a.forEach((v,i)=>i?g.lineTo(X(i),Y(v)):g.moveTo(X(i),Y(v)));g.stroke();a.forEach((v,i)=>{g.fillStyle=col;g.beginPath();g.arc(X(i),Y(v),4,0,7);g.fill();g.strokeStyle='#fff';g.lineWidth=2;g.stroke()})};
-  ln(A,XC.slate);ln(R,XC.c3);const l=ms.length-1;g.textAlign='left';g.fillStyle='#1c2228';g.font='13px '+FONT;g.fillText('전체 '+A[l],X(l)+10,Y(A[l]));g.fillText('난간대 '+R[l],X(l)+10,Y(R[l])+(Math.abs(Y(A[l])-Y(R[l]))<14?14:0));
-  return c.toDataURL('image/png').split(',')[1]}
+  ln(A,XC.slate);ln(R,XC.c3);const l=ms.length-1;g.textAlign='left';g.fillStyle='#1c2228';g.font='bold 13px '+FONT;g.fillText('전체 '+A[l],X(l)+10,Y(A[l]));g.fillText('난간대 '+R[l],X(l)+10,Y(R[l])+(Math.abs(Y(A[l])-Y(R[l]))<14?14:0));
+  return{b64:c.toDataURL('image/png').split(',')[1],w:W,h:H}}
 async function exportStat(){
   if(typeof ExcelJS==='undefined'){alert('엑셀 기능을 불러오지 못했습니다.');return}
   const b=$('xstat');b.disabled=true;b.textContent='만드는 중...';
   try{
     const rows=sScope(),rail=rows.filter(isRail),per=statY==='all'?'전체 기간':statY+'년'+(statM?' '+(+statM)+'월':' 전체');
-    const wb=new ExcelJS.Workbook(),thin={style:'thin',color:{argb:'FF808080'}},box={top:thin,left:thin,bottom:thin,right:thin},fnt=o=>Object.assign({name:'맑은 고딕',size:11},o||{});
-    const sheet=(name,title,head,data,widths,img,imgW,imgH)=>{
-      const ws=wb.addWorksheet(name);ws.columns=widths.map(w=>({width:w}));ws.mergeCells(1,1,1,head.length);
-      const t=ws.getCell(1,1);t.value=title;t.font=fnt({size:16,bold:true});t.alignment={vertical:'middle'};ws.getRow(1).height=26;
-      head.forEach((h,i)=>{const c=ws.getCell(3,i+1);c.value=h;c.font=fnt({bold:true});c.alignment={horizontal:'center',vertical:'middle'};c.border=box;c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFDFE3E7'}}});
-      data.forEach((r,ri)=>r.forEach((v,ci)=>{const c=ws.getCell(4+ri,ci+1);c.value=v;c.font=fnt();c.border=box;c.alignment={horizontal:'center',vertical:'middle',wrapText:true}}));
-      if(img)ws.addImage(wb.addImage({base64:img,extension:'png'}),{tl:{col:head.length+0.5,row:2},ext:{width:imgW,height:imgH},editAs:'oneCell'});
-      return ws};
-    // 요약
-    const du=rows.filter(r=>r.doneAt).map(r=>(new Date(r.doneAt)-new Date(r.reqAt))/864e5).filter(d=>d>=0&&d<400);
-    const avg=du.length?du.reduce((a,x)=>a+x,0)/du.length:0;
-    const sum=[['기간',per],['전체 요청',rows.length+'건'],['난간대 요청',rail.length+'건']].concat(CO2.map(c=>{const n=rows.filter(r=>r.co===c).length,k=rail.filter(r=>r.co===c).length;return[c+' 요청 / 난간대',n+'건 / '+k+'건 ('+(n?Math.round(k/n*100):0)+'%)']})).concat([['평균 처리 소요일',avg.toFixed(1)+'일 (완료 '+du.length+'건)'],['중간값',sMed(du).toFixed(1)+'일'],['당일 완료',(du.length?Math.round(du.filter(d=>d<1).length/du.length*100):0)+'%']]);
-    sheet('요약','정정 업무요청 분석 요약 ('+per+')',['항목','내용'],sum,[28,36]);
-    // 난간대 장소·회사
-    const L1=PL.map(pl=>({l:pl,segs:CO2.map(c=>({v:rail.filter(r=>placeOf(r)===pl&&r.co===c).length,c:CC_X[c]}))}));
-    sheet('난간대 장소·회사','난간대 — 장소별 · 회사별 ('+per+')',['장소'].concat(CO2,['합계']),L1.map(i=>[i.l].concat(i.segs.map(x=>x.v),[i.segs.reduce((a,x)=>a+x.v,0)])),[14,14,16,10],pngBars('난간대 — 장소별 · 회사별',L1,CO2.map(c=>[c,CC_X[c]])),760,64+L1.length*28+14);
-    // 장소별
-    const L2=PL.map(pl=>({l:pl,segs:CO2.map(c=>({v:rows.filter(r=>placeOf(r)===pl&&r.co===c).length,c:CC_X[c]}))}));
-    sheet('장소별','장소별 요청 건수 ('+per+')',['장소'].concat(CO2,['합계','난간대']),L2.map(i=>[i.l].concat(i.segs.map(x=>x.v),[i.segs.reduce((a,x)=>a+x.v,0),rail.filter(r=>placeOf(r)===i.l).length])),[14,14,16,10,10],pngBars('장소별 요청 건수',L2,CO2.map(c=>[c,CC_X[c]])),760,64+L2.length*28+14);
-    // 월별
-    const yrRows=all.filter(r=>statY==='all'||r.reqAt.startsWith(statY));let ms=[];
+    const wb=new ExcelJS.Workbook(),fnt=o=>Object.assign({name:'맑은 고딕',size:11,color:{argb:'FF1C2228'}},o||{});
+    const ln={style:'thin',color:{argb:'FFBFC5CC'}},box={top:ln,left:ln,bottom:ln,right:ln};
+    const fillC=c=>({type:'pattern',pattern:'solid',fgColor:{argb:c}});
+    const HEADF='FFDFE3E7',F1='FFD6E4F7',F2='FFFBE0D3',SEC='FFE8EDF2',DARK='FF2F3E4D';
+    const ws=wb.addWorksheet('분석 보고서',{views:[{showGridLines:false}],pageSetup:{orientation:'landscape',paperSize:9,fitToPage:true,fitToWidth:1,fitToHeight:0,horizontalCentered:true,margins:{left:.4,right:.4,top:.5,bottom:.5,header:.2,footer:.2}},headerFooter:{oddFooter:'&C&P / &N 쪽'}});
+    ws.columns=Array.from({length:12},()=>({width:13}));
+    const PXR=20; // 한 줄 높이(px) = 15pt
+    let r=1;const setH=(row,px)=>{ws.getRow(row).height=px*0.75};
+    const cell=(row,col,v,o)=>{o=o||{};const c=ws.getCell(row,col);c.value=v;c.font=fnt(o.font);c.alignment=Object.assign({horizontal:'center',vertical:'middle',wrapText:true},o.al||{});if(o.box!==false)c.border=box;if(o.fill)c.fill=fillC(o.fill);return c};
+    const merge=(r1,c1,r2,c2)=>{if(r1!==r2||c1!==c2)ws.mergeCells(r1,c1,r2,c2)};
+    // ---- 제목
+    merge(1,1,2,12);cell(1,1,'정정 업무요청 분석 보고서',{box:false,fill:DARK,font:{size:20,bold:true,color:{argb:'FFFFFFFF'}}});for(let c=1;c<=12;c++){ws.getCell(1,c).fill=fillC(DARK);ws.getCell(2,c).fill=fillC(DARK)}setH(1,22);setH(2,22);
+    const d0=new Date(),today=d0.getFullYear()+'.'+p2(d0.getMonth()+1)+'.'+p2(d0.getDate());
+    merge(3,1,3,12);cell(3,1,'기간: '+per+'   ·   작성일: '+today,{box:false,al:{horizontal:'left',indent:1},font:{size:11,color:{argb:'FF66707A'}}});setH(3,24);
+    // ---- 핵심 수치
+    const du=rows.filter(r=>r.doneAt).map(r=>(new Date(r.doneAt)-new Date(r.reqAt))/864e5).filter(d=>d>=0&&d<400),avg=du.length?du.reduce((a,x)=>a+x,0)/du.length:0,same=du.length?Math.round(du.filter(d=>d<1).length/du.length*100):0;
+    const wipAll=all.filter(isWip).sort((a,b)=>a.reqAt.localeCompare(b.reqAt)),now=Date.now();
+    const kp=[['전체 요청',rows.length+'건'],['난간대 요청',rail.length+'건'],['난간대 비율',(rows.length?Math.round(rail.length/rows.length*100):0)+'%'],['평균 처리 소요일',avg.toFixed(1)+'일'],['당일 완료율',same+'%'],['미처리 (전체 기간)',wipAll.length+'건']];
+    r=5;kp.forEach((k,i)=>{const c=i*2+1;merge(r,c,r,c+1);merge(r+1,c,r+1,c+1);cell(r,c,k[0],{fill:'FFF3F5F7',font:{size:10,color:{argb:'FF66707A'}}});ws.getCell(r,c+1).border=box;ws.getCell(r,c+1).fill=fillC('FFF3F5F7');cell(r+1,c,k[1],{font:{size:18,bold:true}});ws.getCell(r+1,c+1).border=box});
+    setH(r,20);setH(r+1,36);r+=3;
+    const secStarts=[];const sec=t=>{secStarts.push(r);merge(r,1,r,12);cell(r,1,t,{box:false,fill:SEC,al:{horizontal:'left',indent:1},font:{size:13,bold:true}});for(let c=1;c<=12;c++)ws.getCell(r,c).fill=fillC(SEC);setH(r,24);r++};
+    const hdr=(row,col,arr)=>arr.forEach((h,i)=>cell(row,col+i,h,{fill:i===1&&h==='현대제철'?F1:i===2&&h==='현대아이엠씨'?F2:HEADF,font:{bold:true}}));
+    const put=(img,row)=>{ws.addImage(wb.addImage({base64:img.b64,extension:'png'}),{tl:{col:6.08,row:row-1},ext:{width:img.w,height:img.h},editAs:'oneCell'});return Math.ceil(img.h/PXR)};
+    const COL=CO2.map(c=>[c,CC_X[c]]);
+    const tbl=(row,head,data,totalRow)=>{hdr(row,1,head);data.forEach((d,i)=>d.forEach((v,j)=>cell(row+1+i,1+j,v,{font:{bold:totalRow&&i===data.length-1}})));data.forEach((_,i)=>setH(row+1+i,PXR));setH(row,PXR+2)};
+    const secBlock=(title,head,data,imgFn,totalRow)=>{sec(title);const img=imgFn?imgFn():null;tbl(r,head,data,totalRow);const used=Math.max(data.length+1,img?put(img,r)+0:0);for(let k=data.length+1;k<used;k++)setH(r+k,PXR);r+=used+1;setH(r-1,10)};
+    // ---- 1 난간대 장소·회사
+    const sums=(items)=>items.map(i=>i.segs.reduce((a,x)=>a+x.v,0));
+    const L1=PL.map(pl=>({l:pl,segs:CO2.map(c=>({v:rail.filter(x=>placeOf(x)===pl&&x.co===c).length,c:CC_X[c]}))})),T1=sums(L1),S1=T1.reduce((a,x)=>a+x,0);
+    secBlock('1. 난간대 — 장소별 · 회사별',['장소','현대제철','현대아이엠씨','합계','비율'],L1.map((i,k)=>[i.l,i.segs[0].v,i.segs[1].v,T1[k],S1?Math.round(T1[k]/S1*100)+'%':'0%']).concat([['합계',L1.reduce((a,i)=>a+i.segs[0].v,0),L1.reduce((a,i)=>a+i.segs[1].v,0),S1,'100%']]),()=>pngBars(L1,COL,540),true);
+    // ---- 2 월별
+    const yrRows=all.filter(x=>statY==='all'||x.reqAt.startsWith(statY));let ms=[];
     if(statY!=='all'){const nm=new Date(),lim=+statY===nm.getFullYear()?nm.getMonth()+1:12;for(let i=1;i<=lim;i++)ms.push(statY+'-'+p2(i))}
-    else{const set=[...new Set(yrRows.map(r=>r.reqAt.slice(0,7)))].sort();if(set.length){let[y,m]=set[0].split('-').map(Number);const e=set[set.length-1];for(;;){const k=y+'-'+p2(m);ms.push(k);if(k>=e)break;if(++m>12){m=1;y++}}}}
-    if(ms.length){const A=ms.map(m=>yrRows.filter(r=>r.reqAt.startsWith(m)).length),R=ms.map(m=>yrRows.filter(r=>r.reqAt.startsWith(m)&&isRail(r)).length);
-      sheet('월별 추이','월별 추이 ('+(statY==='all'?'전체 기간':statY+'년')+')',['월','전체','난간대'],ms.map((m,i)=>[m.slice(0,4)+'년 '+(+m.slice(5))+'월',A[i],R[i]]),[16,10,10],pngLine('월별 추이',ms,A,R),760,300)}
-    // 요청자
-    const pm={};rows.forEach(r=>{const k=(r.co||'')+'|'+(r.nm||'')+'|'+(r.ti||'');pm[k]=(pm[k]||0)+1});
+    else{const set=[...new Set(yrRows.map(x=>x.reqAt.slice(0,7)))].sort();if(set.length){let[y,m]=set[0].split('-').map(Number);const e=set[set.length-1];for(;;){const k=y+'-'+p2(m);ms.push(k);if(k>=e)break;if(++m>12){m=1;y++}}}}
+    if(ms.length){const A=ms.map(m=>yrRows.filter(x=>x.reqAt.startsWith(m)).length),R=ms.map(m=>yrRows.filter(x=>x.reqAt.startsWith(m)&&isRail(x)).length);
+      secBlock('2. 월별 추이 ('+(statY==='all'?'전체 기간':statY+'년')+')',['월','전체','난간대','난간대 비율'],ms.map((m,i)=>[m.slice(0,4)+'.'+m.slice(5),A[i],R[i],A[i]?Math.round(R[i]/A[i]*100)+'%':'0%']).concat([['합계',A.reduce((a,x)=>a+x,0),R.reduce((a,x)=>a+x,0),(()=>{const t=A.reduce((a,x)=>a+x,0);return t?Math.round(R.reduce((a,x)=>a+x,0)/t*100)+'%':'0%'})()]]),()=>pngLine(ms,A,R,540,Math.max(240,(ms.length+2)*PXR)),true)}
+    // ---- 3 장소별
+    const L2=PL.map(pl=>({l:pl,segs:CO2.map(c=>({v:rows.filter(x=>placeOf(x)===pl&&x.co===c).length,c:CC_X[c]}))})),T2=sums(L2),S2=T2.reduce((a,x)=>a+x,0);
+    secBlock('3. 장소별 요청 건수',['장소','현대제철','현대아이엠씨','합계','난간대'],L2.map((i,k)=>[i.l,i.segs[0].v,i.segs[1].v,T2[k],rail.filter(x=>placeOf(x)===i.l).length]).concat([['합계',L2.reduce((a,i)=>a+i.segs[0].v,0),L2.reduce((a,i)=>a+i.segs[1].v,0),S2,rail.length]]),()=>pngBars(L2,COL,540),true);
+    // ---- 4 회사별 + 소요일 (오른쪽 표)
+    sec('4. 회사별 요청 현황 · 처리 소요일');
+    {const head=['회사','요청 건수','난간대','난간대 비율','평균 소요일'];hdr(r,1,head);setH(r,PXR+2);
+     const cd=CO2.map(c=>{const n=rows.filter(x=>x.co===c).length,k=rail.filter(x=>x.co===c).length,dd=rows.filter(x=>x.co===c&&x.doneAt).map(x=>(new Date(x.doneAt)-new Date(x.reqAt))/864e5).filter(d=>d>=0&&d<400);return[c,n,k,n?Math.round(k/n*100)+'%':'0%',dd.length?(dd.reduce((a,x)=>a+x,0)/dd.length).toFixed(1)+'일':'-']});
+     cd.forEach((d,i)=>{d.forEach((v,j)=>cell(r+1+i,1+j,v));setH(r+1+i,PXR)});
+     const longest=rows.filter(x=>x.doneAt).map(x=>({x,d:(new Date(x.doneAt)-new Date(x.reqAt))/864e5})).filter(o=>o.d>=0&&o.d<400).sort((a,b)=>b.d-a.d)[0];
+     const kv=[['평균',avg.toFixed(1)+'일'],['중간값',sMed(du).toFixed(1)+'일'],['당일 완료',same+'% ('+du.filter(d=>d<1).length+'건)'],['최장',longest?longest.d.toFixed(1)+'일':'-']];
+     merge(r,7,r,12);cell(r,7,'처리 소요일 (완료 '+du.length+'건 기준)',{fill:HEADF,font:{bold:true}});for(let c=8;c<=12;c++)ws.getCell(r,c).border=box;
+     kv.forEach((k,i)=>{merge(r+1+i,7,r+1+i,9);cell(r+1+i,7,k[0],{fill:'FFF3F5F7'});[8,9].forEach(c=>ws.getCell(r+1+i,c).border=box);merge(r+1+i,10,r+1+i,12);cell(r+1+i,10,k[1],{font:{bold:true}});[11,12].forEach(c=>ws.getCell(r+1+i,c).border=box);setH(r+1+i,PXR)});
+     r+=Math.max(cd.length,kv.length)+1;
+     if(longest){merge(r,1,r,12);cell(r,1,'최장 건: '+(longest.r?'':'')+((longest.x.content||'').split('\n')[0].slice(0,60)),{box:false,al:{horizontal:'left',indent:1},font:{size:10,color:{argb:'FF66707A'}}});setH(r,18);r++}
+     r++;setH(r-1,10)}
+    // ---- 5 요청자
+    const pm={};rows.forEach(x=>{const k=(x.co||'')+'|'+(x.nm||'')+'|'+(x.ti||'');pm[k]=(pm[k]||0)+1});
     const top=Object.entries(pm).sort((a,b)=>b[1]-a[1]).slice(0,10);
-    sheet('요청자 순위','요청자 순위 상위 10명 ('+per+')',['순위','회사','요청자','건수'],top.map(([k,v],i)=>{const[co,nm,ti]=k.split('|');return[i+1,co,nm+(ti?' '+ti:''),v]}),[8,16,22,10],pngBars('요청자 순위',top.map(([k,v])=>{const[co,nm,ti]=k.split('|');return{l:nm+(ti?' '+ti:''),segs:[{v,c:CC_X[co]||XC.slate}]}}),CO2.map(c=>[c,CC_X[c]])),760,64+top.length*28+14);
-    // 키워드
+    secBlock('5. 요청자 순위 (상위 10명)',['순위','회사','요청자','건수'],top.map(([k,v],i)=>{const[co,nm,ti]=k.split('|');return[i+1,co,nm+(ti?' '+ti:''),v]}),()=>pngBars(top.map(([k,v])=>{const[co,nm,ti]=k.split('|');return{l:nm+(ti?' '+ti:''),segs:[{v,c:CC_X[co]||XC.slate}]}}),COL,540),false);
+    // ---- 6 키워드
     const kws=KW0.concat(statKw.filter(k=>!KW0.includes(k)));
-    const kc=kws.map(k=>{const re=kwRe(k);const m=rows.filter(r=>k==='난간대'?isRail(r):re.test(sTxt(r)));return{l:k,segs:CO2.map(c=>({v:m.filter(r=>r.co===c).length,c:CC_X[c]})),n:m.length}}).sort((a,b)=>b.n-a.n);
-    sheet('키워드 빈도','요청 내용 키워드 빈도 ('+per+')',['키워드'].concat(CO2,['합계']),kc.map(i=>[i.l].concat(i.segs.map(x=>x.v),[i.n])),[16,14,16,10],pngBars('요청 내용 키워드 빈도',kc,CO2.map(c=>[c,CC_X[c]])),760,64+kc.length*28+14);
-    // 미처리
-    const wip=all.filter(isWip).sort((a,b)=>a.reqAt.localeCompare(b.reqAt)),now=Date.now();
-    sheet('미처리 목록','미처리 요청 (전체 기간, 오래된 순)',['요청일','회사','요청자','요청 내용','경과일'],wip.map(r=>[fmt(r.reqAt),r.co||'',(r.nm||'')+(r.ti?' '+r.ti:''),r.content||'',Math.floor((now-new Date(r.reqAt))/864e5)+'일']),[16,14,18,60,10]);
+    const kc=kws.map(k=>{const re=kwRe(k);const m=rows.filter(x=>k==='난간대'?isRail(x):re.test(sTxt(x)));return{l:k,segs:CO2.map(c=>({v:m.filter(x=>x.co===c).length,c:CC_X[c]})),n:m.length}}).sort((a,b)=>b.n-a.n);
+    secBlock('6. 요청 내용 키워드 빈도',['키워드','현대제철','현대아이엠씨','합계'],kc.map(i=>[i.l,i.segs[0].v,i.segs[1].v,i.n]),()=>pngBars(kc,COL,540),false);
+    // ---- 7 미처리
+    sec('7. 미처리 요청 (전체 기간, 오래된 순 상위 10건 / 전체 '+wipAll.length+'건)');
+    {merge(r,1,r,2);cell(r,1,'요청일',{fill:HEADF,font:{bold:true}});ws.getCell(r,2).border=box;merge(r,3,r,4);cell(r,3,'회사 · 요청자',{fill:HEADF,font:{bold:true}});ws.getCell(r,4).border=box;merge(r,5,r,11);cell(r,5,'요청 내용',{fill:HEADF,font:{bold:true}});for(let c=6;c<=11;c++)ws.getCell(r,c).border=box;cell(r,12,'경과일',{fill:HEADF,font:{bold:true}});setH(r,PXR+2);r++;
+     wipAll.slice(0,10).forEach(x=>{merge(r,1,r,2);cell(r,1,fmt(x.reqAt));ws.getCell(r,2).border=box;merge(r,3,r,4);cell(r,3,(x.co||'')+'\n'+(x.nm||'')+(x.ti?' '+x.ti:''),{font:{size:10}});ws.getCell(r,4).border=box;merge(r,5,r,11);cell(r,5,(x.content||'').split('\n')[0],{al:{horizontal:'left',indent:1}});for(let c=6;c<=11;c++)ws.getCell(r,c).border=box;cell(r,12,Math.floor((now-new Date(x.reqAt))/864e5)+'일',{font:{bold:true}});setH(r,30);r++});
+     if(!wipAll.length){merge(r,1,r,12);cell(r,1,'미처리 요청이 없습니다.',{box:false});r++}}
+    // 쪽 나누기: 섹션이 쪽 중간에서 잘리지 않게 (A4 가로, 한 쪽 약 740px)
+    {const rp=i=>((ws.getRow(i).height)||15)/0.75;let cum=0,start=1;const bounds=secStarts.concat([r]);
+     cum=0;for(let i=1;i<bounds[0];i++)cum+=rp(i);
+     for(let k=0;k<secStarts.length;k++){let h=0;for(let i=bounds[k];i<bounds[k+1];i++)h+=rp(i);
+       if(cum+h>740&&cum>0){ws.getRow(bounds[k]-1).addPageBreak();cum=0}cum+=h}}
+    ws.pageSetup.printArea='A1:L'+r;
+    // ---- 원자료
+    const w2=wb.addWorksheet('원자료 (기간 내 전체)',{views:[{state:'frozen',ySplit:1}]});
+    w2.columns=[{header:'요청일시',width:17},{header:'완료일시',width:17},{header:'소요일',width:9},{header:'회사',width:14},{header:'요청자',width:16},{header:'장소',width:9},{header:'난간대',width:8},{header:'요청 내용 / 결과',width:70}];
+    rows.slice().sort((a,b)=>a.reqAt.localeCompare(b.reqAt)).forEach(x=>{const dd=x.doneAt?(new Date(x.doneAt)-new Date(x.reqAt))/864e5:null;w2.addRow([x.reqAt.replace('T',' '),x.doneAt?x.doneAt.replace('T',' '):'',dd!=null&&dd>=0?+dd.toFixed(1):'',x.co||'',(x.nm||'')+(x.ti?' '+x.ti:''),placeOf(x),isRail(x)?'○':'',(x.content||'')+(x.res?'\n결과: '+x.res:'')])});
+    w2.getRow(1).eachCell(c=>{c.font=fnt({bold:true});c.fill=fillC(HEADF);c.alignment={horizontal:'center',vertical:'middle'};c.border=box});
+    w2.eachRow((row,i)=>{if(i>1)row.eachCell((c,j)=>{c.font=fnt();c.border=box;c.alignment={vertical:'top',wrapText:true,horizontal:j===8?'left':'center'}})});
+    w2.autoFilter={from:'A1',to:'H1'};w2.pageSetup={orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:0,paperSize:9};
     const buf=await wb.xlsx.writeBuffer();
     dl(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),'정정 업무요청 분석('+(statY==='all'?'전체':statY)+(statM?'.'+statM:'')+').xlsx');
   }catch(e){alert('엑셀 파일을 만들지 못했습니다: '+e.message)}
