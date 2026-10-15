@@ -169,6 +169,9 @@ function lbl(){return '엑셀로 내려받기'}
 const RAIL=/난간/;
 function isRail(r){return r.rail===true||(r.rail!==false&&RAIL.test((r.content||'')+(r.res||'')+(r.note||'')))}
 function isWip(r){return !r.doneAt&&!r.res}
+/* 「추가사진」 건: 같은 작업의 사진을 나눠 담은 기록. 목록에는 보이지만 건수·분석에는 세지 않음 (예외 건은 SUPP에 id를 더함) */
+const SUPP={'imp-0167':'수직 래들 안전손잡이 보수 요청','00000000-0000-4000-8000-f000000000a7':'수직 래들 안전손잡이 보수 요청'},SUPP_RE=/^\[추가\s?사진/;
+function markSupp(){all.forEach(r=>{if(r.supp)return;if(SUPP[r.id]!==undefined||SUPP_RE.test(r.content||'')){r.supp=true;if(!SUPP_RE.test(r.content||''))r.content='[추가사진 — '+SUPP[r.id]+'] '+(r.content||'')}})}
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 
 // storage: IndexedDB, with in-memory fallback
@@ -197,7 +200,8 @@ function rowHtml(r,i,imgs){return `<tr class="row" data-id="${r.id}"><td>${i+1}<
   <td>${resHtml(r)}${imgs(r.donePhotos,'donePhotos',r.id)}</td>
   <td class="l" style="text-align:center">${esc(r.note||'')}${imgs(r.notePhotos,'notePhotos',r.id)}</td></tr>`}
 function render(){
-  const nr=all.filter(isRail).length,nw=all.filter(isWip).length;
+  markSupp();
+  const nr=all.filter(r=>!r.supp&&isRail(r)).length,nw=all.filter(r=>!r.supp&&isWip(r)).length;
   $('views').innerHTML=[['month','월별 일지',''],['rail','난간대 작업',nr],['wip','진행 중',nw],['stat','분석','']].map(([v,t,n])=>`<button data-v="${v}" class="${view===v?'on':''}">${t}${n!==''?` <small>${n}</small>`:''}</button>`).join('');
   const [y,mo]=month.split('-');
   $('xlsx').textContent=lbl();
@@ -206,11 +210,11 @@ function render(){
   let th='';
   if(view==='month'){
     th=`<button data-y="-1" aria-label="이전 해">◀</button><b>${y}년</b><button data-y="1" aria-label="다음 해">▶</button>`;
-    for(let i=1;i<=12;i++){const m=y+'-'+p2(i),n=all.filter(r=>r.reqAt.startsWith(m)).length;
+    for(let i=1;i<=12;i++){const m=y+'-'+p2(i),n=all.filter(r=>!r.supp&&r.reqAt.startsWith(m)).length;
       th+=`<button class="${m===month?'on':''}" data-m="${m}">${i}월${n?` <small>${n}</small>`:''}</button>`}
   }else{
     const f0=view==='rail'?isRail:isWip,yrs=[...new Set(all.map(r=>r.reqAt.slice(0,4)).concat(String(new Date().getFullYear())))].sort();
-    const cnt=yy=>all.filter(r=>f0(r)&&(yy==='all'||r.reqAt.startsWith(yy))).length;
+    const cnt=yy=>all.filter(r=>!r.supp&&f0(r)&&(yy==='all'||r.reqAt.startsWith(yy))).length;
     th=['all',...yrs].map(yy=>`<button class="${yfilter===yy?'on':''}" data-yf="${yy}">${yy==='all'?'전체':yy+'년'} <small>${cnt(yy)}</small></button>`).join('');
   }
   tb.innerHTML=th;$('xlsx').textContent=lbl();
@@ -477,7 +481,7 @@ const KW0=['난간대','릴','몰드 키','플라스크','래들','주입컵','�
 function kwRe(k){return k==='난간대'?/난간/:new RegExp(k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/\s+/g,'\\s*'))}
 function placeOf(r){const t=r.content||'';let b='기타',bi=1e9;for(const k of ['수평','수직','열처리','축로']){const i=t.indexOf(k);if(i>=0&&i<bi){bi=i;b=k}}return b}
 const sTxt=r=>(r.content||'')+' '+(r.res||'')+' '+(r.note||'');
-function sScope(){return all.filter(r=>statY==='all'||(r.reqAt.startsWith(statY)&&(!statM||r.reqAt.slice(5,7)===statM)))}
+function sScope(){return all.filter(r=>!r.supp&&(statY==='all'||(r.reqAt.startsWith(statY)&&(!statM||r.reqAt.slice(5,7)===statM))))}
 function sBars(items,max){ // items:[{l,segs:[{v,c,t}],note}]
   max=max||Math.max(1,...items.map(i=>i.segs.reduce((a,x)=>a+x.v,0)));
   return items.map(i=>{const tot=i.segs.reduce((a,x)=>a+x.v,0);
@@ -485,7 +489,7 @@ function sBars(items,max){ // items:[{l,segs:[{v,c,t}],note}]
 const sLegend=()=>`<div class="lg">${CO2.map(c=>`<span><i style="background:${CC[c]}"></i>${c==='현대아이엠씨'?'현대아이엠씨':c}</span>`).join('')}</div>`;
 const byCo=(rows,f)=>CO2.map(c=>({v:rows.filter(r=>r.co===c&&f(r)).length,c:CC[c],t:c}));
 function sLine(){ // 월별 추이 (연도 기준, 월 선택과 무관)
-  const rows=all.filter(r=>statY==='all'||r.reqAt.startsWith(statY));
+  const rows=all.filter(r=>!r.supp&&(statY==='all'||r.reqAt.startsWith(statY)));
   let ms=[];if(statY!=='all'){const nowM=new Date(),lim=+statY===nowM.getFullYear()?nowM.getMonth()+1:12;for(let i=1;i<=lim;i++)ms.push(statY+'-'+p2(i))}
   else{const set=[...new Set(rows.map(r=>r.reqAt.slice(0,7)))].sort();if(set.length){let [y,m]=set[0].split('-').map(Number);const end=set[set.length-1];for(;;){const k=y+'-'+p2(m);ms.push(k);if(k>=end)break;if(++m>12){m=1;y++}}}}
   if(!ms.length)return '<div class="empty">기록이 없습니다.</div>';
@@ -523,7 +527,7 @@ function renderStat(){
   const du=rows.filter(r=>r.doneAt).map(r=>(new Date(r.doneAt)-new Date(r.reqAt))/864e5).filter(d=>d>=0&&d<400);
   const avg=du.length?du.reduce((a,b)=>a+b,0)/du.length:0,same=du.filter(d=>d<1).length;
   const longest=rows.filter(r=>r.doneAt).map(r=>({r,d:(new Date(r.doneAt)-new Date(r.reqAt))/864e5})).filter(x=>x.d>=0&&x.d<400).sort((a,b)=>b.d-a.d)[0];
-  const wip=all.filter(isWip).sort((a,b)=>a.reqAt.localeCompare(b.reqAt)),now=Date.now();
+  const wip=all.filter(r=>!r.supp&&isWip(r)).sort((a,b)=>a.reqAt.localeCompare(b.reqAt)),now=Date.now();
   const c6=`<div class="stc"><h3>처리 소요일</h3><div class="sub">${per} · 완료된 ${du.length}건 기준</div><div class="tl"><div><small>평균</small><b>${avg.toFixed(1)}일</b></div><div><small>중간값</small><b>${sMed(du).toFixed(1)}일</b></div><div><small>당일 완료</small><b>${du.length?Math.round(same/du.length*100):0}%</b><small>${same}건</small></div></div>
     ${longest?`<div class="wl"><b>최장</b><span>${longest.d.toFixed(1)}일 · ${esc((longest.r.content||'').split('\n')[0].slice(0,34))}</span></div>`:''}
     <div class="sub" style="margin:12px 0 4px">미처리 ${wip.length}건 (전체 기간, 오래된 순)</div>${wip.slice(0,5).map(r=>`<div class="wl"><b>${Math.floor((now-new Date(r.reqAt))/864e5)}일</b><span>${fmt(r.reqAt)} · ${esc(r.nm||'')} · ${esc((r.content||'').split('\n')[0].slice(0,30))}</span></div>`).join('')||'<div class="sub">없음</div>'}</div>`;
@@ -574,7 +578,7 @@ async function exportStat(){
     merge(3,1,3,12);cell(3,1,'기간: '+per+'   ·   작성일: '+today,{box:false,al:{horizontal:'left',indent:1},font:{size:11,color:{argb:'FF66707A'}}});setH(3,24);
     // ---- 핵심 수치
     const du=rows.filter(r=>r.doneAt).map(r=>(new Date(r.doneAt)-new Date(r.reqAt))/864e5).filter(d=>d>=0&&d<400),avg=du.length?du.reduce((a,x)=>a+x,0)/du.length:0,same=du.length?Math.round(du.filter(d=>d<1).length/du.length*100):0;
-    const wipAll=all.filter(isWip).sort((a,b)=>a.reqAt.localeCompare(b.reqAt)),now=Date.now();
+    const wipAll=all.filter(r=>!r.supp&&isWip(r)).sort((a,b)=>a.reqAt.localeCompare(b.reqAt)),now=Date.now();
     const kp=[['전체 요청',rows.length+'건'],['난간대 요청',rail.length+'건'],['난간대 비율',(rows.length?Math.round(rail.length/rows.length*100):0)+'%'],['평균 처리 소요일',avg.toFixed(1)+'일'],['당일 완료율',same+'%'],['미처리 (전체 기간)',wipAll.length+'건']];
     r=5;kp.forEach((k,i)=>{const c=i*2+1;merge(r,c,r,c+1);merge(r+1,c,r+1,c+1);cell(r,c,k[0],{fill:'FFF3F5F7',font:{size:10,color:{argb:'FF66707A'}}});ws.getCell(r,c+1).border=box;ws.getCell(r,c+1).fill=fillC('FFF3F5F7');cell(r+1,c,k[1],{font:{size:18,bold:true}});ws.getCell(r+1,c+1).border=box});
     setH(r,20);setH(r+1,36);r+=3;
@@ -589,7 +593,7 @@ async function exportStat(){
     const L1=PL.map(pl=>({l:pl,segs:CO2.map(c=>({v:rail.filter(x=>placeOf(x)===pl&&x.co===c).length,c:CC_X[c]}))})),T1=sums(L1),S1=T1.reduce((a,x)=>a+x,0);
     secBlock('1. 난간대 — 장소별 · 회사별',['장소','현대제철','현대아이엠씨','합계','비율'],L1.map((i,k)=>[i.l,i.segs[0].v,i.segs[1].v,T1[k],S1?Math.round(T1[k]/S1*100)+'%':'0%']).concat([['합계',L1.reduce((a,i)=>a+i.segs[0].v,0),L1.reduce((a,i)=>a+i.segs[1].v,0),S1,'100%']]),()=>pngBars(L1,COL,540),true);
     // ---- 2 월별
-    const yrRows=all.filter(x=>statY==='all'||x.reqAt.startsWith(statY));let ms=[];
+    const yrRows=all.filter(x=>!x.supp&&(statY==='all'||x.reqAt.startsWith(statY)));let ms=[];
     if(statY!=='all'){const nm=new Date(),lim=+statY===nm.getFullYear()?nm.getMonth()+1:12;for(let i=1;i<=lim;i++)ms.push(statY+'-'+p2(i))}
     else{const set=[...new Set(yrRows.map(x=>x.reqAt.slice(0,7)))].sort();if(set.length){let[y,m]=set[0].split('-').map(Number);const e=set[set.length-1];for(;;){const k=y+'-'+p2(m);ms.push(k);if(k>=e)break;if(++m>12){m=1;y++}}}}
     if(ms.length){const A=ms.map(m=>yrRows.filter(x=>x.reqAt.startsWith(m)).length),R=ms.map(m=>yrRows.filter(x=>x.reqAt.startsWith(m)&&isRail(x)).length);
