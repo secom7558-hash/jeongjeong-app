@@ -125,13 +125,13 @@ dialog img{display:block;max-width:94vw;max-height:80vh}
       <label class="chk"><input type="checkbox" id="rail"> 난간대 작업 <span class="cnt" id="railHint"></span></label>
     </div>
     <div class="card">
-      <h3>작업 전 사진 <span class="cnt" id="cB">0/6</span></h3>
+      <h3>작업 전 사진 <span class="cnt" id="cB">0/6</span></h3><div class="cnt" style="margin:-4px 0 8px">사진이 없으면 「사진 없음」 이미지가 자동으로 들어갑니다.</div>
       <input type="file" id="fB" accept="image/*" multiple hidden>
       <button class="btn" type="button" id="addB">📷 사진 찍기 / 고르기</button>
       <div class="thumbs" id="tB"></div>
     </div>
     <div class="card">
-      <h3>작업 후 사진 <span class="cnt" id="cA">0/6</span></h3>
+      <h3>작업 후 사진 <span class="cnt" id="cA">0/6</span></h3><div class="cnt" style="margin:-4px 0 8px">사진이 없으면 「사진 없음」 이미지가 자동으로 들어갑니다.</div>
       <input type="file" id="fA" accept="image/*" multiple hidden>
       <button class="btn" type="button" id="addA">📷 사진 찍기 / 고르기</button>
       <div class="thumbs" id="tA"></div>
@@ -176,7 +176,7 @@ dialog img{display:block;max-width:94vw;max-height:80vh}
     <textarea id="rNote" placeholder="예: 용접 보수 완료, 도장 필요"></textarea>
   </div>
   <div class="card">
-    <h3>작업 후 사진 <span class="cnt" id="cR">0/6</span></h3>
+    <h3>작업 후 사진 <span class="cnt" id="cR">0/6</span></h3><div class="cnt" style="margin:-4px 0 8px">사진이 없으면 「사진 없음」 이미지가 자동으로 들어갑니다.</div>
     <input type="file" id="fR" accept="image/*" multiple hidden>
     <button class="btn" type="button" id="addR">📷 사진 찍기 / 고르기</button>
     <div class="thumbs" id="tR"></div>
@@ -296,15 +296,22 @@ function loadForm(r){
   $('editbar').hidden=false;$('send').textContent='수정해서 올리기';
   $('formWrap').hidden=false;$('done').hidden=true}
 
+/* 사진이 없을 때 넣는 「사진 없음」 대체 이미지 (기록마다 따로 올림 — 공용 파일을 두면 삭제 때 같이 지워지므로) */
+function phItem(){function mk(w,h){var c=document.createElement('canvas');c.width=w;c.height=h;var g=c.getContext('2d');g.fillStyle='#e9ecef';g.fillRect(0,0,w,h);g.strokeStyle='#c4cad1';g.lineWidth=Math.max(2,w/200);g.strokeRect(w*.04,h*.05,w*.92,h*.9);
+  g.fillStyle='#6b7680';g.textAlign='center';g.textBaseline='middle';g.font='bold '+Math.round(w/9)+'px "Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",sans-serif';g.fillText('사진 없음',w/2,h/2);return c.toDataURL('image/jpeg',.8)}
+  return{d:mk(800,600),t:mk(320,240),p:null,ph:true}}
+function dropPh(a){if(a.some(function(x){return !x.ph}))for(var i=a.length-1;i>=0;i--)if(a[i].ph)a.splice(i,1)}
 function fail(msg){$('err').textContent=msg;busy=false;$('send').disabled=false;$('send').textContent=editing?'수정해서 올리기':'올리기'}
 $('send').onclick=function(){
   if(busy)return;
   var m=[];
   if(!who)m.push('작성자');if(!$('co').value||!$('nm').value.trim())m.push('요청자(회사·이름)');
   if(!places().length)m.push('장소');if(!$('content').value.trim())m.push('작업 내용');
-  if(!B.length)m.push('작업 전 사진');
-  if($('eD').value&&!A.length)m.push('작업 후 사진');
   if(m.length){$('err').textContent='빠진 곳: '+m.join(', ');window.scrollTo(0,document.body.scrollHeight);return}
+  dropPh(B);dropPh(A);
+  var needB=!B.length,needA=!!$('eD').value&&!A.length;
+  if(needB||needA){if(!confirm('사진이 없는 곳에 「사진 없음」 이미지를 넣어 올립니다.\n('+[needB?'작업 전':'',needA?'작업 후':''].filter(Boolean).join('·')+' 사진)\n\n계속할까요?'))return;
+    if(needB)B.push(phItem());if(needA)A.push(phItem());B.draw();A.draw()}
   busy=true;$('send').disabled=true;$('send').textContent='올리는 중… (창을 닫지 마세요)';$('err').textContent='';
   var id=editing||crypto.randomUUID(),wasEdit=editing!==null;
   var all=B.concat(A),todo=all.filter(function(it){return !it.p});
@@ -407,7 +414,8 @@ $('resCancel').onclick=function(){resRow=null;goTab('pgMine')};
 $('resSend').onclick=function(){
   if(resBusy||!resRow)return;
   if(!$('rD').value){$('errR').textContent='작업 완료 날짜를 넣어 주세요.';return}
-  if(!R.length){$('errR').textContent='작업 후 사진을 한 장 이상 올려 주세요.';return}
+  dropPh(R);
+  if(!R.length){if(!confirm('작업 후 사진이 없습니다.\n「사진 없음」 이미지를 넣어 올릴까요?'))return;R.push(phItem());R.draw()}
   resBusy=true;$('resSend').disabled=true;$('errR').textContent='';$('resSend').textContent='올리는 중… (창을 닫지 마세요)';
   var id=resRow.id,n=0,todo=R.filter(function(it){return !it.p});
   todo.reduce(function(pr,it){return pr.then(function(){
