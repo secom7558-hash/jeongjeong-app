@@ -107,7 +107,7 @@ tr.row{cursor:default}
 </head>
 <body>
 <header>
-  <h1 id="title">정정 업무요청 일지</h1>
+  <div><div style="font-family:Helvetica Neue,Arial,sans-serif;font-weight:300;letter-spacing:.3em;font-size:12px;color:var(--acc);margin-bottom:3px">HYUNDAI <b style="font-weight:800">IMC</b> <span style="font-family:inherit;letter-spacing:.08em;font-weight:500;margin-left:6px;color:var(--mute)">중공업팀</span></div><h1 id="title">정정 업무요청 일지</h1></div>
   <div style="display:flex;gap:8px;flex-wrap:wrap"><button id="pull" class="pri" title="정정반 직원이 폰 앱으로 올린 요청을 가져옵니다">새 요청 가져오기</button><button id="xlsx">엑셀로 내려받기</button><button id="xstat">분석 엑셀로 내려받기</button><button id="bak">백업 저장</button><button id="rst">백업 불러오기</button><input type="file" id="rstf" accept=".json" hidden><select id="pPaper" aria-label="인쇄 용지" title="인쇄 용지" style="width:auto;padding:8px 10px;background:var(--paper)"><option value="a4p">A4 세로</option><option value="a4l">A4 가로</option><option value="a3p">A3 세로</option><option value="a3l">A3 가로</option></select><select id="pBind" aria-label="왼쪽 철 여백" title="왼쪽 철 여백 (파일철·클립보드에 끼울 자리)" style="width:auto;padding:8px 10px;background:var(--paper)"><option value="0">철 여백 없음</option><option value="15">철 여백 15mm</option><option value="20">철 여백 20mm</option><option value="25">철 여백 25mm</option><option value="30">철 여백 30mm</option></select><button id="print">인쇄</button><button class="pri" id="add">+ 요청 등록</button></div>
 </header>
 <div class="views" id="views"></div>
