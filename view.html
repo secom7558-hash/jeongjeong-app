@@ -7,9 +7,9 @@
 <meta name="robots" content="noindex,nofollow">
 <style>
 :root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
---bg:#eef0f2;--paper:#fff;--ink:#1c2228;--mute:#66707a;--line:#b9c0c7;--acc:#c8501e;--accink:#fff;--done:#1f7a4d;--head:#dfe3e7}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15181b;--paper:#1f2428;--ink:#e8ebee;--mute:#8d97a1;--line:#434b53;--acc:#e0642f;--accink:#15181b;--done:#4cc38a;--head:#2a3036}}
-:root[data-theme="dark"]{--bg:#15181b;--paper:#1f2428;--ink:#e8ebee;--mute:#8d97a1;--line:#434b53;--acc:#e0642f;--accink:#15181b;--done:#4cc38a;--head:#2a3036}
+--bg:#faf9f6;--paper:#fff;--ink:#16253b;--mute:#6b7684;--line:#d9d5cb;--acc:#002c5f;--accink:#fff;--done:#1f7a4d;--head:#f3f1ea}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15181b;--paper:#1f2428;--ink:#e8ebee;--mute:#8d97a1;--line:#434b53;--acc:#7fb0ff;--accink:#0b1626;--done:#4cc38a;--head:#2a3036}}
+:root[data-theme="dark"]{--bg:#15181b;--paper:#1f2428;--ink:#e8ebee;--mute:#8d97a1;--line:#434b53;--acc:#7fb0ff;--accink:#0b1626;--done:#4cc38a;--head:#2a3036}
 *{box-sizing:border-box}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:"Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",sans-serif;font-size:15px}
@@ -96,6 +96,8 @@ legend{font-weight:700;padding:0 6px}
 .stc .tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--paper);font-size:12.5px;padding:5px 8px;border-radius:6px;white-space:nowrap;z-index:5;display:none}
 .kwc{display:inline-flex;gap:4px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:1px 4px 1px 9px;font-size:13px}.kwc button{border:0;background:none;padding:0 4px;color:var(--mute)}
 @media print{.st .bar{display:none}.st{padding:0}}
+/* 인쇄는 예전 색 그대로 (디자인 변경 2026-10-22) */
+@media print{:root{--ink:#1c2228;--mute:#66707a;--line:#b9c0c7;--acc:#c8501e;--head:#dfe3e7;}}
 #pull,#bak,#rst,#add,#vl,#vr{display:none!important}
 tr.row{cursor:default}
 #srvStat{font-size:12px;color:var(--mute);align-self:center}
