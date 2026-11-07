@@ -13,6 +13,7 @@
 *{box-sizing:border-box}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:"Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",sans-serif;font-size:15px}
+#top{position:sticky;top:0;z-index:20;background:var(--bg);box-shadow:0 1px 0 var(--line)}
 header{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:14px 16px 8px}
 h1{margin:0;font-size:20px}
 button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:6px;padding:8px 12px}
@@ -73,7 +74,7 @@ legend{font-weight:700;padding:0 6px}
 #pv{width:96vw;max-width:96vw;height:94vh;max-height:94vh;padding:10px;background:rgba(15,18,20,.96);border:0;border-radius:10px;margin:auto}
 #pv[open]{display:flex;align-items:center;justify-content:center}
 #pv img{max-width:100%;max-height:100%;object-fit:contain}
-@media print{header,.tabs,.views{display:none}body{background:#fff;color:#000}.wrap{overflow:visible;padding:0}table{min-width:0}tr{break-inside:avoid}}
+@media print{#top{position:static;box-shadow:none}.pbrand{display:block;text-align:right;font-size:9pt;margin:0 0 2mm}header,.tabs,.views{display:none}body{background:#fff;color:#000}.wrap{overflow:visible;padding:0}table{min-width:0}tr{break-inside:avoid}}
 /* ---- 분석 탭 (그래프) ---- */
 :root{--c1:#2a78d6;--c2:#eb6834;--c3:#1baf7a;--slate:#5b7083;--track:#e3e6ea}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--c1:#3987e5;--c2:#d95926;--c3:#199e70;--slate:#8aa0b3;--track:#2f363c}}
@@ -106,12 +107,15 @@ tr.row{cursor:default}
 <style id="pageSize">/* 인쇄 용지·철 여백 */</style>
 </head>
 <body>
+<div id="top">
 <header>
   <div><div style="font-family:Helvetica Neue,Arial,sans-serif;font-weight:300;letter-spacing:.3em;font-size:12px;color:var(--acc);margin-bottom:3px">HYUNDAI <b style="font-weight:800">IMC</b> <span style="font-family:inherit;letter-spacing:.08em;font-weight:500;margin-left:6px;color:var(--mute)">중공업팀</span></div><h1 id="title">정정 업무요청 일지</h1></div>
   <div style="display:flex;gap:8px;flex-wrap:wrap"><button id="pull" class="pri" title="정정반 직원이 폰 앱으로 올린 요청을 가져옵니다">새 요청 가져오기</button><button id="xlsx">엑셀로 내려받기</button><button id="xstat">분석 엑셀로 내려받기</button><button id="bak">백업 저장</button><button id="rst">백업 불러오기</button><input type="file" id="rstf" accept=".json" hidden><select id="pPaper" aria-label="인쇄 용지" title="인쇄 용지" style="width:auto;padding:8px 10px;background:var(--paper)"><option value="a4p">A4 세로</option><option value="a4l">A4 가로</option><option value="a3p">A3 세로</option><option value="a3l">A3 가로</option></select><select id="pBind" aria-label="왼쪽 철 여백" title="왼쪽 철 여백 (파일철·클립보드에 끼울 자리)" style="width:auto;padding:8px 10px;background:var(--paper)"><option value="0">철 여백 없음</option><option value="15">철 여백 15mm</option><option value="20">철 여백 20mm</option><option value="25">철 여백 25mm</option><option value="30">철 여백 30mm</option></select><button id="print">인쇄</button><button class="pri" id="add">+ 요청 등록</button></div>
 </header>
+<div class="pbrand" style="display:none">HYUNDAI IMC 중공업팀</div>
 <div class="views" id="views"></div>
 <div class="tabs" id="tabs"></div>
+</div>
 <div class="wrap" id="wrap"></div>
 
 <dialog id="dlg">
