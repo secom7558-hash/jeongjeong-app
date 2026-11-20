@@ -17,7 +17,8 @@
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html,body{margin:0;background:var(--bg);color:var(--ink)}
-body{font-family:"Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",sans-serif;font-size:15px;line-height:1.55;-webkit-text-size-adjust:100%}
+body{font-family:"Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",sans-serif;font-size:15px;line-height:1.5;-webkit-text-size-adjust:100%;word-break:keep-all;overflow-wrap:anywhere}
+button,.st,.tag,.seg button{white-space:nowrap}
 button,input,select,textarea{font:inherit;color:inherit}
 a{color:inherit}
 .top{position:sticky;top:0;z-index:5;background:var(--paper);border-bottom:1px solid var(--line);padding:calc(8px + env(safe-area-inset-top)) 16px 0}
@@ -57,10 +58,12 @@ select.sel{border:1px solid var(--line);border-radius:6px;background:var(--paper
 .back{display:inline-block;margin:2px 0 8px;font-size:14px;color:var(--mute);text-decoration:none}
 h1{font-size:20px;line-height:1.35;margin:4px 0 6px}
 .meta{font-size:13px;color:var(--mute)}
+.meta span{white-space:nowrap}
 .meta span+span:before{content:" · "}
+.it .meta{display:block;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .tag{font-size:12px;border:1px solid var(--line);border-radius:4px;padding:3px 8px;color:var(--mute)}
-.body{white-space:pre-wrap;margin-top:12px}
+.body{white-space:pre-wrap;margin-top:10px;line-height:1.6;text-wrap:pretty}
 .pics{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .pics img{width:104px;height:104px;object-fit:cover;border-radius:6px;background:var(--head);cursor:zoom-in}
 .pics a.pdf{width:104px;height:104px;border-radius:6px;border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;text-decoration:none;color:#b3261e;font-weight:800;font-size:15px}
@@ -73,11 +76,16 @@ h1{font-size:20px;line-height:1.35;margin:4px 0 6px}
 .step:before{content:"";position:absolute;left:-18px;top:6px;width:10px;height:10px;border-radius:50%;background:var(--paper);border:2px solid var(--acc)}
 .step.fin:before{background:var(--done);border-color:var(--done)}
 .step .d{font-size:13px;font-weight:700;color:var(--acc)}
+.step .wk{font-size:13px;color:var(--ink);margin-left:8px;font-weight:400}
+.step .wk em{font-style:normal;color:var(--mute);margin-right:4px}
+.info{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:8px;font-size:13px}
+.info span{white-space:nowrap}
+.info em{font-style:normal;color:var(--mute);margin-right:4px}
 .step.fin .d{color:var(--done)}
 .notes{margin-top:8px;border-top:1px dashed var(--line)}
-.note{font-size:14px;padding:7px 0;border-bottom:1px dashed var(--soft)}
-.note b{font-weight:700;margin-right:6px}
-.note .w{color:var(--mute);font-size:12px;margin-left:6px}
+.note{font-size:14px;padding:6px 0;border-bottom:1px dashed var(--soft);line-height:1.45}
+.note b{font-weight:700;margin-right:6px;white-space:nowrap}
+.note .w{color:var(--mute);font-size:12px;margin-left:6px;white-space:nowrap}
 .nin{display:flex;gap:6px;margin-top:8px}
 .nin input{flex:1;min-width:0;border:1px solid var(--line);border-radius:6px;background:var(--bg);padding:8px 10px;font-size:14px}
 .nin button,.btn{border:1px solid var(--acc);background:var(--acc);color:var(--accink);border-radius:6px;padding:8px 12px;font-size:14px;cursor:pointer;white-space:nowrap}
@@ -197,10 +205,10 @@ function showIssue(id){var i=D.issues.filter(function(x){return x.id===id})[0];
   var ss=stepsOf(id);
   $('app').innerHTML='<a class="back" href="#">← 목록</a>'+
    '<div class="box"><div class="bar"><span class="meta"><span>'+esc(i.part)+'</span><span>'+fmtD(i.reg_date)+' 등록</span>'+(i.done_date?'<span>'+fmtD(i.done_date)+' 완료</span>':'')+'</span><span class="sp"></span>'+stLabel(i)+'</div>'+
-   '<h1>'+esc(i.title)+'</h1>'+(i.risks&&i.risks.length?'<div class="tags">'+i.risks.map(function(r){return '<span class="tag">'+esc(r)+'</span>'}).join('')+'</div>':'')+
+   '<h1>'+esc(i.title)+'</h1>'+(i.crew||i.freq?'<div class="info">'+(i.crew?'<span><em>작업인원</em>'+esc(i.crew)+'</span>':'')+(i.freq?'<span><em>작업빈도</em>'+esc(i.freq)+'</span>':'')+'</div>':'')+(i.risks&&i.risks.length?'<div class="tags">'+i.risks.map(function(r){return '<span class="tag">'+esc(r)+'</span>'}).join('')+'</div>':'')+
    pics(i.photos)+(i.body?'<div class="body">'+esc(i.body)+'</div>':'')+noteBlock(id,null)+'</div>'+
    '<div class="sec">개선 과정 '+ss.length+'</div>'+
-   (ss.length||i.status==='done'?'<div class="tl">'+ss.map(function(s){return '<div class="step"><div class="d">'+fmtD(s.step_date)+'</div>'+(s.body?'<div class="body" style="margin-top:2px">'+esc(s.body)+'</div>':'')+pics(s.photos)+noteBlock(id,s.id)+'</div>'}).join('')+
+   (ss.length||i.status==='done'?'<div class="tl">'+ss.map(function(s){return '<div class="step"><div class="d">'+fmtD(s.step_date)+(s.workers?'<span class="wk"><em>작업자</em>'+esc(s.workers)+'</span>':'')+'</div>'+(s.body?'<div class="body" style="margin-top:2px">'+esc(s.body)+'</div>':'')+pics(s.photos)+noteBlock(id,s.id)+'</div>'}).join('')+
      (i.status==='done'?'<div class="step fin"><div class="d">'+fmtD(i.done_date)+' 최종 개선 완료</div></div>':'')+'</div>':'<div class="empty" style="padding:14px">아직 개선 과정이 없습니다.</div>');
   window.scrollTo(0,0)}
 
