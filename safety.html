@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="안전 개선">
 <style>
-:root{--bg:#faf9f6;--paper:#fff;--ink:#16253b;--mute:#6b7684;--line:#d9d5cb;--soft:#ece9e1;--acc:#002c5f;--accink:#fff;--done:#1f7a4d;--open:#b5651d;--head:#f3f1ea;--g:16px;--fs-s:12px;--fs-m:14px;--fs-b:15px;--fs-t:20px;--lh:22px;color-scheme:light}
+:root{--bg:#faf9f6;--paper:#fff;--ink:#16253b;--mute:#6b7684;--line:#d9d5cb;--soft:#ece9e1;--acc:#002c5f;--accink:#fff;--done:#1f7a4d;--open:#b5651d;--head:#f3f1ea;--g:16px;--fs-s:12px;--fs-m:14px;--fs-b:15px;--fs-t:20px;--lh:22px;--w:720px;color-scheme:light}
 @media (prefers-color-scheme:dark){:root{--bg:#15181b;--paper:#1f2428;--ink:#e8ebee;--mute:#8d97a1;--line:#3a4148;--soft:#2a3036;--acc:#7fb0ff;--accink:#0b1626;--done:#4cc38a;--open:#e0a060;--head:#2a3036;color-scheme:dark}}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
@@ -21,7 +21,7 @@ body{font-family:"Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",sans-serif
 button,.st,.tag,.seg button{white-space:nowrap}
 button,input,select,textarea{font:inherit;color:inherit}
 a{color:inherit}
-.top{position:sticky;top:0;z-index:5;background:var(--paper);border-bottom:1px solid var(--line);padding:calc(8px + env(safe-area-inset-top)) max(var(--g),calc((100% - 720px)/2 + var(--g))) 0}
+.top{position:sticky;top:0;z-index:5;background:var(--paper);border-bottom:1px solid var(--line);padding:calc(8px + env(safe-area-inset-top)) max(var(--g),calc((100% - var(--w))/2 + var(--g))) 0}
 .brand{font-family:"Helvetica Neue",Arial,sans-serif;font-weight:300;letter-spacing:.3em;font-size:var(--fs-s);color:var(--acc)}
 .brand b{font-weight:800}
 .brand span{font-family:inherit;letter-spacing:.08em;font-weight:500;margin-left:6px;color:var(--mute)}
@@ -33,7 +33,7 @@ a{color:inherit}
 .menu .ttl{display:block;padding:6px 0 10px;font-size:var(--fs-t);font-weight:700;color:var(--ink)}
 .menu b{display:none}
 @media (min-width:900px){.menu .pc,.menu b{display:block}.menu .ttl{display:none}}
-.wrap{max-width:720px;margin:0 auto;padding:14px var(--g) 40px}
+.wrap{max-width:var(--w);margin:0 auto;padding:14px var(--g) 40px}
 .bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .sp{flex:1}
 .mute{color:var(--mute);font-size:var(--fs-m)}
@@ -115,6 +115,51 @@ dialog img{max-width:96vw;max-height:92vh;display:block}
 .pick .g button small{color:var(--mute);margin-left:4px}
 .err{color:#b3261e;font-size:var(--fs-m);margin-top:6px}
 .load{padding:40px 0;text-align:center;color:var(--mute)}
+
+/* ---------- 컴퓨터(넓은 화면) ---------- */
+.pcOnly{display:none}
+.pbrand{display:none}
+.it .cc,.lhd{display:none}
+.dgrid .col2>.sec:first-child{margin-top:24px}
+.tb{gap:6px}
+@media (min-width:900px){
+ :root{--w:1280px;--fs-s:13px;--fs-m:15px;--fs-b:16px;--lh:24px}
+ .pcOnly{display:inline-block}
+ .dgrid{display:grid;grid-template-columns:minmax(420px,5fr) 6fr;gap:28px;align-items:start}
+ .dgrid .col2>.sec:first-child{margin-top:0}
+ .dgrid .col2{min-width:0}
+ .pics img{width:150px;height:112px}
+ .pics a.pdf{width:150px;height:112px}
+ .g2{display:grid;grid-template-columns:1fr 1fr;gap:0 28px;align-items:start}
+ .kpi{grid-template-columns:repeat(5,1fr)}
+}
+@media (min-width:900px),print{
+ .it{display:grid;grid-template-columns:96px minmax(0,1fr) 120px 110px 90px 80px 90px;align-items:center;gap:14px;padding:10px 16px}
+ .it .meta{display:none}
+ .it .cc{display:block;font-size:var(--fs-m);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .it .th{width:96px;height:72px}
+ .lhd{display:grid;grid-template-columns:96px minmax(0,1fr) 120px 110px 90px 80px 90px;gap:14px;padding:8px 16px;background:var(--head);border-bottom:1px solid var(--line);font-size:var(--fs-s);font-weight:700;color:var(--mute)}
+ .list{overflow:hidden}
+}
+@media print{
+ :root{--bg:#fff;--paper:#fff;--ink:#000;--mute:#444;--line:#999;--soft:#ccc;--head:#eee;--acc:#000;--done:#000;--open:#000;--fs-s:8pt;--fs-m:9pt;--fs-b:10pt;--fs-t:13pt;--lh:14pt;--w:none;color-scheme:light}
+ body{font-size:10pt;background:#fff}
+ .top,.np,.nin,.back,.pcOnly{display:none!important}
+ .pbrand{display:block;text-align:right;font-size:8pt;letter-spacing:.12em;margin:0 0 4pt}
+ .wrap{max-width:none;padding:0}
+ .it,.step,.box,.hb,.kpi div{break-inside:avoid}
+ .it{grid-template-columns:60px minmax(0,1fr) 72px 88px 44px 36px 54px;gap:8px;padding:6pt 8pt}
+ .it .th{width:60px;height:45px}
+ .lhd{grid-template-columns:60px minmax(0,1fr) 72px 88px 44px 36px 54px;gap:8px;padding:4pt 8pt}
+ .pics img{width:28mm;height:21mm}
+ .pics a.pdf{width:28mm;height:21mm}
+ .dgrid{display:block}
+ .g2{display:block}
+ .kpi{grid-template-columns:repeat(5,1fr)}
+ .tl:before{background:#ccc}
+ .box,.list{border-radius:0}
+ *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
 </style>
 </head>
 <body>
@@ -122,6 +167,7 @@ dialog img{max-width:96vw;max-height:92vh;display:block}
   <div class="brand">HYUNDAI <b>IMC</b><span>중공업팀</span></div>
   <nav class="menu"><span class="ttl">안전 개선</span><a class="pc" href="https://secom7558-hash.github.io/jeongjeong-app/view.html">정정 일지</a><b>안전 개선</b></nav>
 </div>
+<div class="wrap pbrand" style="padding-bottom:0">HYUNDAI IMC 중공업팀</div>
 <main class="wrap" id="app"><div class="load">불러오는 중입니다…</div></main>
 <dialog id="dlg"><img id="dlgImg" alt="사진"></dialog>
 <dialog id="pickDlg"><div class="pick"><h2>이름을 골라 주세요</h2><div class="mute">의견에 이 이름으로 표시됩니다. 처음 한 번만 고르면 됩니다.</div><div class="g" id="pickList"></div><div style="text-align:right;margin-top:12px"><button class="btn ghost" id="pickClose" type="button">닫기</button></div></div></dialog>
@@ -168,6 +214,36 @@ function me(){var n=lsGet('sv-name');return D.viewers&&D.viewers.some(function(v
 document.addEventListener('click',function(e){var b=e.target.closest('[data-big]');if(b){$('dlgImg').src=pubUrl(b.dataset.big);$('dlg').showModal()}});
 $('dlg').onclick=function(){$('dlg').close()};
 
+/* ---------- 인쇄·엑셀 단추(컴퓨터 화면만) ---------- */
+function prefP(){try{var o=JSON.parse(lsGet('sv-print')||'{}');return{p:o.p||'A4 portrait',m:o.m==null?20:o.m}}catch(e){return{p:'A4 portrait',m:20}}}
+function toolsHtml(){var o=prefP();
+  return '<button class="who pcOnly" id="bXls" type="button">엑셀로 내려받기</button>'+
+   '<select class="sel pcOnly" id="pPaper">'+[['A4 portrait','A4 세로'],['A4 landscape','A4 가로'],['A3 portrait','A3 세로'],['A3 landscape','A3 가로']].map(function(x){return '<option value="'+x[0]+'"'+(o.p===x[0]?' selected':'')+'>'+x[1]+'</option>'}).join('')+'</select>'+
+   '<select class="sel pcOnly" id="pMar">'+[0,10,15,20,25,30].map(function(m){return '<option value="'+m+'"'+(+o.m===m?' selected':'')+'>철 여백 '+m+'mm</option>'}).join('')+'</select>'+
+   '<button class="who pcOnly" id="bPrt" type="button">인쇄</button>'}
+function bindTools(){var a=$('bXls');if(!a)return;a.onclick=exportXls;
+  var sv=function(){lsSet('sv-print',JSON.stringify({p:$('pPaper').value,m:+$('pMar').value}))};$('pPaper').onchange=sv;$('pMar').onchange=sv;
+  $('bPrt').onclick=function(){sv();var o=prefP(),st=$('pgst');if(!st){st=document.createElement('style');st.id='pgst';document.head.appendChild(st)}
+    st.textContent='@page{size:'+o.p+';margin:10mm 10mm 12mm '+o.m+'mm}';window.print()}}
+function loadXlsx(cb){if(window.XLSX)return cb(true);var u=['xlsx.full.min.js','https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'],n=0;
+  (function nx(){if(n>=u.length)return cb(false);var sc=document.createElement('script');sc.src=u[n++];sc.onload=function(){cb(!!window.XLSX)};sc.onerror=function(){nx()};document.head.appendChild(sc)})()}
+function monthly(IS){var k=new Date(Date.now()+9*3600e3),ms=[];for(var j=11;j>=0;j--){var d=new Date(Date.UTC(k.getUTCFullYear(),k.getUTCMonth()-j,1));ms.push(d.getUTCFullYear()+'-'+pad(d.getUTCMonth()+1))}
+  return {ms:ms,R:ms.map(function(m){return IS.filter(function(i){return i.reg_date.slice(0,7)===m}).length}),C:ms.map(function(m){return IS.filter(function(i){return i.done_date&&i.done_date.slice(0,7)===m}).length})}}
+function exportXls(){loadXlsx(function(ok){if(!ok){alert('엑셀 기능을 불러오지 못했습니다. xlsx.full.min.js 파일이 같은 곳에 올라가 있는지 확인해 주세요.');return}
+  var IS=D.issues,SS=D.steps,NS=D.notes,t=today(),done=IS.filter(function(i){return i.status==='done'});
+  var iss=[['상태','제목','파트','등록일','작업인원','작업빈도','완료일','걸린 날(일)','개선 횟수','의견 수','위험성평가','문제 내용']].concat(IS.map(function(i){var s=SS.filter(function(x){return x.issue_id===i.id});
+    return[i.status==='done'?'완료':'진행 중',i.title,i.part,i.reg_date,i.crew||'',i.freq||'',i.done_date||'',i.done_date?days(i.reg_date,i.done_date):days(i.reg_date,t),s.length,NS.filter(function(n){return n.issue_id===i.id}).length,(i.risks||[]).join(', '),i.body||'']}));
+  var tt=function(id){var i=IS.filter(function(x){return x.id===id})[0];return i?i.title:''};
+  var stp=[['문제점','날짜','개선 작업자','한 일','사진 수']].concat(SS.map(function(s){return[tt(s.issue_id),s.step_date,s.workers||'',s.body||'',(s.photos||[]).length]}));
+  var nts=[['문제점','개선 과정 날짜','이름','직책','의견','쓴 때']].concat(NS.map(function(n){var s=n.step_id&&SS.filter(function(x){return x.id===n.step_id})[0];var k=new Date(Date.parse(n.created_at)+9*3600e3).toISOString().slice(0,16).replace('T',' ');return[tt(n.issue_id),s?s.step_date:'(문제점)',n.name,title(n.name),n.body,k]}));
+  var avg=done.length?Math.round(done.reduce(function(s,i){return s+Math.max(0,days(i.reg_date,i.done_date))},0)/done.length):0,M=monthly(IS);
+  var sum=[['안전 개선 분석',t],[],['등록',IS.length],['개선 완료',done.length],['진행 중',IS.length-done.length],['완료율(%)',IS.length?Math.round(done.length/IS.length*100):0],['평균 개선 기간(일)',avg],[],['파트','등록','완료','진행 중']]
+    .concat(PARTS.map(function(p){var a=IS.filter(function(i){return i.part===p}),d=a.filter(function(i){return i.status==='done'}).length;return[p,a.length,d,a.length-d]}))
+    .concat([[],['월','등록','완료']]).concat(M.ms.map(function(m,n){return[m,M.R[n],M.C[n]]}));
+  var wb=XLSX.utils.book_new();
+  [['분석',sum,[22,10,10,10]],['문제점 목록',iss,[8,30,12,11,9,10,11,10,9,8,24,50]],['개선 과정',stp,[30,11,18,60,8]],['의견',nts,[30,14,8,8,50,16]]].forEach(function(x){var ws=XLSX.utils.aoa_to_sheet(x[1]);ws['!cols']=x[2].map(function(w){return{wch:w}});XLSX.utils.book_append_sheet(wb,ws,x[0])});
+  XLSX.writeFile(wb,'안전개선_'+t+'.xlsx')})}
+
 /* ---------- 이름 고르기(번호 없음) ---------- */
 var afterPick=null;
 function pickName(cb){afterPick=cb;$('pickList').innerHTML=D.viewers.map(function(v){return '<button type="button" data-pn="'+esc(v.name)+'">'+esc(v.name)+(v.title?'<small>'+esc(v.title)+'</small>':'')+'</button>'}).join('');$('pickDlg').showModal()}
@@ -182,20 +258,21 @@ window.addEventListener('hashchange',route);
 document.addEventListener('visibilitychange',function(){if(!document.hidden&&D.at&&Date.now()-D.at>60000){D.at=0;route()}});
 function render(){if(location.hash&&/^#i\//.test(location.hash))return;
   var n=me(),open=D.issues.filter(function(i){return i.status!=='done'}).length,done=D.issues.length-open;
-  var head='<div class="bar"><div class="seg" id="vw"><button data-v="list" aria-pressed="'+(view==='list')+'">목록</button><button data-v="stats" aria-pressed="'+(view==='stats')+'">분석</button></div><span class="sp"></span>'+
+  var head='<div class="bar tb np"><div class="seg" id="vw"><button data-v="list" aria-pressed="'+(view==='list')+'">목록</button><button data-v="stats" aria-pressed="'+(view==='stats')+'">분석</button></div><span class="sp"></span>'+toolsHtml()+
     '<button class="who" id="who" type="button">'+(n?esc(n)+' '+esc(title(n)):'이름 고르기')+'</button></div>';
   $('app').innerHTML=head+(view==='stats'?statsHtml(D.issues,D.steps,D.notes):listHtml(open,done));
   $('vw').onclick=function(e){var b=e.target.closest('[data-v]');if(b){view=b.dataset.v;render()}};
-  $('who').onclick=function(){pickName()};
+  $('who').onclick=function(){pickName()};bindTools();
   if(view==='list'){$('fst').onclick=function(e){var b=e.target.closest('[data-f]');if(b){fSt=b.dataset.f;render()}};$('fpart').onchange=function(){fPart=this.value;render()}}}
 function listHtml(open,done){
   var L=D.issues.filter(function(i){return(fSt==='all'||(fSt==='done'?i.status==='done':i.status!=='done'))&&(!fPart||i.part===fPart)});
   return '<div class="sum"><span><b>'+open+'</b>진행 중</span><span><b>'+done+'</b>완료</span><span class="mute" style="align-self:end">전체 '+D.issues.length+'건</span></div>'+
-   '<div class="bar" style="margin-top:8px"><div class="seg" id="fst">'+[['all','전체'],['open','진행 중'],['done','완료']].map(function(x){return '<button data-f="'+x[0]+'" aria-pressed="'+(fSt===x[0])+'">'+x[1]+'</button>'}).join('')+'</div>'+
+   '<div class="bar np" style="margin-top:8px"><div class="seg" id="fst">'+[['all','전체'],['open','진행 중'],['done','완료']].map(function(x){return '<button data-f="'+x[0]+'" aria-pressed="'+(fSt===x[0])+'">'+x[1]+'</button>'}).join('')+'</div>'+
    '<select class="sel" id="fpart"><option value="">모든 파트</option>'+PARTS.map(function(p){return '<option'+(fPart===p?' selected':'')+'>'+p+'</option>'}).join('')+'</select></div>'+
-   '<div class="list">'+(L.length?L.map(function(i){var sc=stepsOf(i.id).length,nc=D.notes.filter(function(x){return x.issue_id===i.id}).length;
+   '<div class="list">'+(L.length?'<div class="lhd"><span></span><span>제목</span><span>파트</span><span>등록일</span><span>개선</span><span>의견</span><span>상태</span></div>':'')+(L.length?L.map(function(i){var sc=stepsOf(i.id).length,nc=D.notes.filter(function(x){return x.issue_id===i.id}).length;
      return '<a class="it" href="#i/'+i.id+'"><span class="th">'+firstThumb(i.photos)+'</span><span class="tx"><span class="t">'+esc(i.title)+'</span>'+
-       '<span class="meta"><span>'+esc(i.part)+'</span><span>'+shortD(i.reg_date)+' 등록</span>'+(sc?'<span>개선 '+sc+'회</span>':'')+(nc?'<span>의견 '+nc+'</span>':'')+'</span></span>'+stLabel(i)+'</a>'}).join(''):'<div class="empty">'+(D.issues.length?'조건에 맞는 문제점이 없습니다.':'아직 등록된 문제점이 없습니다.')+'</div>')+'</div>'}
+       '<span class="meta"><span>'+esc(i.part)+'</span><span>'+shortD(i.reg_date)+' 등록</span>'+(sc?'<span>개선 '+sc+'회</span>':'')+(nc?'<span>의견 '+nc+'</span>':'')+'</span></span>'+
+       '<span class="cc">'+esc(i.part)+'</span><span class="cc">'+fmtD(i.reg_date)+'</span><span class="cc">'+(sc?sc+'회':'-')+'</span><span class="cc">'+(nc||'-')+'</span>'+stLabel(i)+'</a>'}).join(''):'<div class="empty">'+(D.issues.length?'조건에 맞는 문제점이 없습니다.':'아직 등록된 문제점이 없습니다.')+'</div>')+'</div>'}
 
 function noteBlock(iid,sid){var ns=notesOf(iid,sid),k=iid+'_'+(sid||'');
   return '<div class="notes">'+ns.map(function(x){return '<div class="note"><div class="h"><b>'+esc(x.name)+(title(x.name)?' '+esc(title(x.name)):'')+'</b><span class="w">'+ago(x.created_at)+'</span></div><div class="tx2">'+esc(x.body)+'</div></div>'}).join('')+
@@ -203,14 +280,14 @@ function noteBlock(iid,sid){var ns=notesOf(iid,sid),k=iid+'_'+(sid||'');
 function showIssue(id){var i=D.issues.filter(function(x){return x.id===id})[0];
   if(!i){$('app').innerHTML='<a class="back" href="#">← 목록</a><div class="empty">찾을 수 없습니다.</div>';return}
   var ss=stepsOf(id);
-  $('app').innerHTML='<a class="back" href="#">← 목록</a>'+
+  $('app').innerHTML='<div class="bar tb np"><a class="back" href="#">← 목록</a><span class="sp"></span>'+toolsHtml()+'</div><div class="dgrid"><div class="col1">'+
    '<div class="box"><div class="bar"><span class="meta"><span>'+esc(i.part)+'</span><span>'+fmtD(i.reg_date)+' 등록</span>'+(i.done_date?'<span>'+fmtD(i.done_date)+' 완료</span>':'')+'</span><span class="sp"></span>'+stLabel(i)+'</div>'+
    '<h1>'+esc(i.title)+'</h1>'+(i.crew||i.freq?'<div class="kv">'+(i.crew?'<em>작업인원</em><span>'+esc(i.crew)+'</span>':'')+(i.freq?'<em>작업빈도</em><span>'+esc(i.freq)+'</span>':'')+'</div>':'')+(i.risks&&i.risks.length?'<div class="tags">'+i.risks.map(function(r){return '<span class="tag">'+esc(r)+'</span>'}).join('')+'</div>':'')+
-   pics(i.photos)+(i.body?'<div class="body">'+esc(i.body)+'</div>':'')+noteBlock(id,null)+'</div>'+
+   pics(i.photos)+(i.body?'<div class="body">'+esc(i.body)+'</div>':'')+noteBlock(id,null)+'</div></div><div class="col2">'+
    '<div class="sec">개선 과정 '+ss.length+'</div>'+
    (ss.length||i.status==='done'?'<div class="tl">'+ss.map(function(s){return '<div class="step"><div class="d">'+fmtD(s.step_date)+'</div>'+(s.workers?'<div class="kv" style="margin-top:0"><em>작업자</em><span>'+esc(s.workers)+'</span></div>':'')+(s.body?'<div class="body" style="margin-top:6px">'+esc(s.body)+'</div>':'')+pics(s.photos)+noteBlock(id,s.id)+'</div>'}).join('')+
-     (i.status==='done'?'<div class="step fin"><div class="d">'+fmtD(i.done_date)+' 최종 개선 완료</div></div>':'')+'</div>':'<div class="empty" style="padding:14px">아직 개선 과정이 없습니다.</div>');
-  window.scrollTo(0,0)}
+     (i.status==='done'?'<div class="step fin"><div class="d">'+fmtD(i.done_date)+' 최종 개선 완료</div></div>':'')+'</div>':'<div class="empty" style="padding:14px">아직 개선 과정이 없습니다.</div>')+'</div></div>';
+  bindTools();window.scrollTo(0,0)}
 
 /* 의견 등록 */
 $('app').addEventListener('click',function(e){var b=e.target.closest('[data-note]');if(!b)return;
@@ -243,7 +320,7 @@ function statsHtml(IS,SS,NS){var t=today(),done=IS.filter(function(i){return i.s
   var risk='<div class="sec">위험성평가별</div><div class="box">'+(rk.length?'<table class="t">'+rk.map(function(r){return '<tr><td>'+esc(r)+'</td><td class="n">'+rc[r]+'건</td></tr>'}).join('')+'</table>':'<div class="mute">위험성평가가 연결된 문제점이 없습니다.</div>')+'</div>';
   var pc={};NS.forEach(function(n){pc[n.name]=(pc[n.name]||0)+1});var vs=(D.viewers||[]).slice().sort(function(a,b){return (pc[b.name]||0)-(pc[a.name]||0)});
   var ppl='<div class="sec">의견 참여</div><div class="box"><table class="t">'+vs.map(function(v){return '<tr><td>'+esc(v.name)+' <span class="mute">'+esc(v.title)+'</span></td><td class="n">'+(pc[v.name]||0)+'건</td></tr>'}).join('')+'</table></div>';
-  return '<div style="margin-top:14px">'+kpi+'</div>'+parts+month+oldH+risk+ppl}
+  return '<div style="margin-top:14px">'+kpi+'</div><div class="g2"><div>'+parts+'</div><div>'+month+'</div><div>'+oldH+'</div><div>'+risk+'</div></div>'+ppl}
 
 /* 새 판 확인: 서버 파일이 바뀌었으면(ETag) 한 번 새로 불러옴 — 홈 화면 앱이 옛 화면을 붙잡는 문제 방지 */
 (function(){try{fetch(location.pathname,{method:'HEAD',cache:'no-store'}).then(function(r){var t=r.headers.get('etag')||r.headers.get('last-modified');if(!t)return;var o=lsGet('sv-ver');lsSet('sv-ver',t);
