@@ -85,6 +85,10 @@ h1{font-size:var(--fs-t);line-height:28px;margin:6px 0 8px}
 .note .h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:var(--fs-m);line-height:var(--lh)}
 .note .h b{font-weight:700}
 .note .w{color:var(--mute);font-size:var(--fs-s);white-space:nowrap}
+.lkd{color:#d6455d;margin-left:2px}
+.nact{margin-top:2px;display:flex;gap:14px}
+.nact button{border:0;background:none;padding:4px 0;font-size:var(--fs-s);color:var(--mute);cursor:pointer;text-decoration:underline}
+.nedit{display:flex;gap:6px;margin-top:4px}.nedit input{flex:1;min-width:0;border:1px solid var(--line);border-radius:6px;background:var(--bg);padding:6px 8px;font-size:var(--fs-m)}
 .note .tx2{font-size:var(--fs-m);line-height:21px;white-space:pre-wrap}
 .nin{display:flex;gap:6px;margin-top:8px}
 .nin input{flex:1;min-width:0;border:1px solid var(--line);border-radius:6px;background:var(--bg);padding:8px 10px;font-size:var(--fs-m)}
@@ -259,6 +263,15 @@ function firstThumb(ps){var p=(ps||[]).filter(function(x){return !isPdf(x)})[0];
 function stepsOf(id){return D.steps.filter(function(s){return s.issue_id===id})}
 function notesOf(id,sid){return D.notes.filter(function(n){return n.issue_id===id&&(n.step_id||null)===(sid||null)})}
 function title(n){var v=D.viewers.filter(function(x){return x.name===n})[0];return v&&v.title?v.title:''}
+/* ---------- 이름 뒤 직책: 서버 명단의 직책을 쓰고, 없으면 「사원」. 같은 직책은 마지막에 한 번만 ---------- */
+var TW='팀장|기장|계장|주임|매니저|사원|과장|부장|대리|반장|조장|기사|차장|실장|사장',TWR=new RegExp('('+TW+')');
+function whoFmt(names){var T={};(D.viewers||[]).forEach(function(v){if(v.title)T[v.name]=v.title});var order=[],g={},raw=[];
+  names.forEach(function(n){n=String(n).trim();if(!n)return;if(TWR.test(n)){raw.push(n);return}var t=T[n]||'사원';if(!g[t]){g[t]=[];order.push(t)}g[t].push(n)});
+  return order.map(function(t){return g[t].join(', ')+' '+t}).concat(raw).join(' / ')}
+function whoParse(v){return String(v||'').replace(/\s*\/\s*/g,',').split(/[,，、\n]+/).map(function(x){return x.trim().replace(new RegExp('\\s+('+TW+')$'),'')}).filter(Boolean)}
+function whoShow(v){v=String(v||'');if(!v)return '';var p=v.split(/[,，、\n]+/).map(function(x){return x.trim()}).filter(Boolean);
+  if(!p.length||p.some(function(x){return TWR.test(x)||/\s|\//.test(x)||x.length>5}))return v;return whoFmt(p)}
+
 function me(){var n=lsGet('sv-name');return D.viewers&&D.viewers.some(function(v){return v.name===n})?n:''}
 document.addEventListener('click',function(e){var b=e.target.closest('[data-big]');if(b){$('dlgImg').src=pubUrl(b.dataset.big);$('dlg').showModal()}});
 $('dlg').onclick=function(){$('dlg').close()};
@@ -324,7 +337,7 @@ function listHtml(open,done){
        '<span class="cc">'+esc(i.part)+'</span><span class="cc">'+fmtD(i.reg_date)+'</span><span class="cc">'+(sc?sc+'회':'-')+'</span><span class="cc">'+(nc||'-')+'</span>'+stLabel(i)+'</a>'}).join(''):'<div class="empty">'+(D.issues.length?'조건에 맞는 문제점이 없습니다.':'아직 등록된 문제점이 없습니다.')+'</div>')+'</div>'}
 
 function noteBlock(iid,sid){var ns=notesOf(iid,sid),k=iid+'_'+(sid||'');
-  return '<div class="notes">'+ns.map(function(x){return '<div class="note"><div class="h"><b>'+esc(x.name)+(title(x.name)?' '+esc(title(x.name)):'')+'</b><span class="w">'+ago(x.created_at)+'</span></div><div class="tx2">'+esc(x.body)+'</div></div>'}).join('')+
+  return '<div class="notes">'+ns.map(function(x){var mine=me()&&x.name===me();return '<div class="note" data-nid="'+x.id+'"><div class="h"><b>'+esc(x.name)+(title(x.name)?' '+esc(title(x.name)):'')+(x.liked?' <span class="lkd" title="올린 사람이 좋아요">♥</span>':'')+'</b><span class="w">'+ago(x.created_at)+(x.edited_at?' · 수정됨':'')+'</span></div><div class="tx2">'+esc(x.body)+'</div>'+(mine?'<div class="nact"><button type="button" data-nedit="'+x.id+'">수정</button><button type="button" data-ndel="'+x.id+'">삭제</button></div>':'')+'</div>'}).join('')+
    '<div class="nin"><input type="text" id="n_'+k+'" maxlength="500" placeholder="의견 남기기"><button type="button" data-note="'+k+'">등록</button></div></div>'}
 function showIssue(id){var i=D.issues.filter(function(x){return x.id===id})[0];
   if(!i){$('app').innerHTML='<a class="back" href="#">← 목록</a><div class="empty">찾을 수 없습니다.</div>';return}
@@ -334,12 +347,19 @@ function showIssue(id){var i=D.issues.filter(function(x){return x.id===id})[0];
    '<h1>'+esc(i.title)+'</h1>'+(i.crew||i.freq?'<div class="kv">'+(i.crew?'<em>작업인원</em><span>'+esc(i.crew)+'</span>':'')+(i.freq?'<em>작업빈도</em><span>'+esc(i.freq)+'</span>':'')+'</div>':'')+(i.risks&&i.risks.length?'<div class="tags">'+i.risks.map(function(r){return '<span class="tag">'+esc(r)+'</span>'}).join('')+'</div>':'')+
    pics(i.photos)+(i.body?'<div class="body">'+esc(i.body)+'</div>':'')+noteBlock(id,null)+'</div></div><div class="col2">'+
    '<div class="sec">개선 과정 '+ss.length+'</div>'+
-   (ss.length||i.status==='done'?'<div class="tl">'+ss.map(function(s){return '<div class="step"><div class="d">'+fmtD(s.step_date)+'</div>'+(s.workers?'<div class="kv" style="margin-top:0"><em>작업자</em><span>'+esc(s.workers)+'</span></div>':'')+(s.body?'<div class="body" style="margin-top:6px">'+esc(s.body)+'</div>':'')+pics(s.photos)+noteBlock(id,s.id)+'</div>'}).join('')+
+   (ss.length||i.status==='done'?'<div class="tl">'+ss.map(function(s){return '<div class="step"><div class="d">'+fmtD(s.step_date)+'</div>'+(s.workers?'<div class="kv" style="margin-top:0"><em>작업자</em><span>'+esc(whoShow(s.workers))+'</span></div>':'')+(s.body?'<div class="body" style="margin-top:6px">'+esc(s.body)+'</div>':'')+pics(s.photos)+noteBlock(id,s.id)+'</div>'}).join('')+
      (i.status==='done'?'<div class="step fin"><div class="d">'+fmtD(i.done_date)+' 최종 개선 완료</div></div>':'')+'</div>':'<div class="empty" style="padding:14px">아직 개선 과정이 없습니다.</div>')+'</div></div>';
   window.scrollTo(0,0)}
 
 /* 의견 등록 */
-$('app').addEventListener('click',function(e){var b=e.target.closest('[data-note]');if(!b)return;
+function refreshIssue(pid){D.at=0;return load().then(function(){var y=window.scrollY;showIssue(pid);window.scrollTo(0,y)})}
+$('app').addEventListener('click',function(e){var q,mm=/^#i\/(.+)$/.exec(location.hash),pid=mm&&mm[1];
+  if(q=e.target.closest('[data-ndel]')){if(!confirm('내 의견을 지울까요? 되돌릴 수 없습니다.'))return;rpc('delete_own_note',{p_id:q.dataset.ndel,p_name:me()}).then(function(){return refreshIssue(pid)}).catch(function(er){alert(er.message)});return}
+  if(q=e.target.closest('[data-nedit]')){var nn=D.notes.filter(function(x){return x.id===q.dataset.nedit})[0],row=q.closest('.note');if(!nn||!row)return;
+    row.querySelector('.tx2').outerHTML='<div class="nedit"><input type="text" maxlength="500" value="'+esc(nn.body)+'"><button class="btn" data-nsave="'+nn.id+'" type="button">저장</button></div>';var a=row.querySelector('.nact');if(a)a.innerHTML='<button type="button" data-ncancel="1">취소</button>';row.querySelector('.nedit input').focus();return}
+  if(q=e.target.closest('[data-ncancel]')){showIssue(pid);return}
+  if(q=e.target.closest('[data-nsave]')){var v=q.parentNode.querySelector('input').value.trim();if(!v)return;q.disabled=true;rpc('edit_own_note',{p_id:q.dataset.nsave,p_name:me(),p_body:v}).then(function(){return refreshIssue(pid)}).catch(function(er){alert(er.message);q.disabled=false});return}
+  var b=e.target.closest('[data-note]');if(!b)return;
   var k=b.dataset.note,inp=$('n_'+k),v=inp.value.trim();if(!v)return;
   var go=function(){if(busy)return;busy=true;b.disabled=true;var p=k.split('_');
     rpc('add_note',{p_name:me(),p_issue:p[0],p_step:p[1]||null,p_body:v}).then(function(){D.at=0;return load()}).then(function(){var y=window.scrollY;showIssue(p[0]);window.scrollTo(0,y)})
