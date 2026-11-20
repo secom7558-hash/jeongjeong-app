@@ -121,7 +121,7 @@ dialog img{max-width:96vw;max-height:92vh;display:block}
 <script>
 var SUPA='https://ayenfffxeifvkpfawamu.supabase.co';
 var KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5ZW5mZmZ4ZWlmdmtwZmF3YW11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ4NDcyNDYsImV4cCI6MjExMDQyMzI0Nn0.DpgGG2AxfFKjQO8OuN4IE9GMAhC40ipNcPwqJ0CZ7uE';
-var PARTS=['수평 조형','수직 주입컵','정정','열처리','크레인','수직 원재료','롤 가공','선반'];
+var PARTS=['롤 가공','선반','수직 원재료','수직 주입컵','수평 조형','열처리','정정','크레인'];  /* 가나다 순 */
 var D={},view='list',fSt='all',fPart='',busy=false;
 
 function $(i){return document.getElementById(i)}
@@ -237,6 +237,9 @@ function statsHtml(IS,SS,NS){var t=today(),done=IS.filter(function(i){return i.s
   var ppl='<div class="sec">의견 참여</div><div class="box"><table class="t">'+vs.map(function(v){return '<tr><td>'+esc(v.name)+' <span class="mute">'+esc(v.title)+'</span></td><td class="n">'+(pc[v.name]||0)+'건</td></tr>'}).join('')+'</table></div>';
   return '<div style="margin-top:14px">'+kpi+'</div>'+parts+month+oldH+risk+ppl}
 
+/* 새 판 확인: 서버 파일이 바뀌었으면(ETag) 한 번 새로 불러옴 — 홈 화면 앱이 옛 화면을 붙잡는 문제 방지 */
+(function(){try{fetch(location.pathname,{method:'HEAD',cache:'no-store'}).then(function(r){var t=r.headers.get('etag')||r.headers.get('last-modified');if(!t)return;var o=lsGet('sv-ver');lsSet('sv-ver',t);
+  if(o&&o!==t&&!/[?&]v=/.test(location.search))location.replace(location.pathname+'?v='+Date.now()+location.hash)}).catch(function(){})}catch(e){}})();
 route();
 </script>
 </body>
