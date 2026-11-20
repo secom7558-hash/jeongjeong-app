@@ -205,7 +205,8 @@ dialog img{max-width:96vw;max-height:92vh;display:block}
 <main class="wrap" id="app"><div class="load">불러오는 중입니다…</div></main>
 <dialog id="dlg"><img id="dlgImg" alt="사진"></dialog>
 <dialog id="bellDlg"><div class="pick"><h2>알림 설정</h2><div class="mute" id="bellMsg"></div>
-  <div id="bellOpts" style="margin-top:12px"><label class="bo"><input type="checkbox" id="bJj"> 정정 일지 — 새 요청·결과가 올라올 때</label><label class="bo"><input type="checkbox" id="bSf"> 안전 개선 — 새 문제점·개선 과정·의견이 올라올 때</label></div>
+  <div class="bo" style="align-items:center;justify-content:space-between;padding-top:10px"><span class="mute" id="bellName"></span><button class="btn ghost" id="bellWho" type="button">이름 고르기</button></div>
+  <div id="bellOpts" style="margin-top:2px"><label class="bo"><input type="checkbox" id="bJj"> 정정 일지 — 새 요청·결과가 올라올 때</label><label class="bo"><input type="checkbox" id="bSf"> 안전 개선 — 새 문제점·개선 과정·의견이 올라올 때</label></div>
   <div class="err" id="bellErr"></div>
   <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap"><button class="btn ghost" id="bellTest" type="button" hidden>시험 알림</button><button class="btn" id="bellSave" type="button">알림 켜기</button><button class="btn ghost" id="bellClose" type="button">닫기</button></div></div></dialog>
 <dialog id="pickDlg"><div class="pick"><h2>이름을 골라 주세요</h2><div class="mute">의견에 이 이름으로 표시됩니다. 처음 한 번만 고르면 됩니다.</div><div class="g" id="pickList"></div><div style="text-align:right;margin-top:12px"><button class="btn ghost" id="pickClose" type="button">닫기</button></div></div></dialog>
@@ -362,12 +363,12 @@ function statsHtml(IS,SS,NS){var t=today(),done=IS.filter(function(i){return i.s
 
 /* ---------- 정정 일지(폰용 보기) — 정정반 서버를 읽기만 함 ---------- */
 var JU='https://yszclwgnkkqlhvgempbe.supabase.co',JK='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlzemNsd2dua2txbGh2Z2VtcGJlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE4ODMwMzMsImV4cCI6MjEwNzQ1OTAzM30.YonB7C62zQQx1cZkvS_A__OgNEV7qR0sQnohVB2rkhc';
-var J={rows:null,at:0},jm='',jf='all',jq='';
+var J={rows:null,at:0},jy='',jm='',jf='all',jq='',jv='list',jInit=false;
 function jUrl(p){return JU+'/storage/v1/object/public/photos/'+p.split('/').map(encodeURIComponent).join('/')}
 function jRec(r){var imp=/^00000000-0000-4000-8000-/.test(r.id),content,res='',note='';
   if(imp){var m=/^([\s\S]*?)(?:\n결과: ([\s\S]*?))?(?:\n비고: ([\s\S]*))?$/.exec(r.content);content=m[1];res=m[2]||'';note=m[3]||''}
   else{content=(r.places&&r.places.length?'['+r.places.join('·')+'] ':'')+(r.detail?r.detail+' — ':'')+r.content;res=r.result_note||'';note='작성: '+r.writer}
-  return{id:r.id,at:r.started_at.slice(0,16),who:[r.co,r.nm,r.ti].filter(Boolean).join(' '),content:content,before:r.before_photos||[],after:r.after_photos||[],end:r.ended_at?r.ended_at.slice(0,16):'',res:res,note:note,rail:!!r.rail}}
+  return{id:r.id,co:r.co||'',nm:r.nm||'',at:r.started_at.slice(0,16),who:[r.co,r.nm,r.ti].filter(Boolean).join(' '),content:content,before:r.before_photos||[],after:r.after_photos||[],end:r.ended_at?r.ended_at.slice(0,16):'',res:res,note:note,rail:!!r.rail}}
 function jLoad(){var out=[],off=0;
   function nx(){return fetch(JU+'/rest/v1/requests?select=*&order=started_at.desc,created_at.desc&limit=1000&offset='+off,{headers:{apikey:JK,Authorization:'Bearer '+JK}}).catch(function(){throw new Error('인터넷 연결을 확인해 주세요')}).then(function(r){if(!r.ok)throw new Error('불러오지 못했습니다');return r.json()}).then(function(r){out=out.concat(r);if(r.length===1000){off+=1000;return nx()}})}
   return nx().then(function(){J.rows=out.map(jRec);J.at=Date.now()})}
@@ -380,22 +381,49 @@ function jRoute(id){
   setMenu('jj');
   ((!J.rows||Date.now()-J.at>60000)?jLoad():Promise.resolve()).then(function(){id?jShow(id):jList()})
   .catch(function(e){$('app').innerHTML='<div class="empty">불러오지 못했습니다.<br>'+esc(e.message)+'<br><br><button class="btn" onclick="J.at=0;route()">다시 시도</button></div>'})}
+function jChips(R){var ys={},ms={};R.forEach(function(r){var y=r.at.slice(0,4),k=r.at.slice(0,7);ys[y]=(ys[y]||0)+1;ms[k]=(ms[k]||0)+1});
+  var yk=Object.keys(ys).sort().reverse();if(!jy||!ys[jy])jy=yk[0]||'';
+  if(!jInit){jInit=true;var mk=Object.keys(ms).filter(function(k){return k.slice(0,4)===jy}).sort().reverse();jm=mk[0]||''}
+  if(jm&&jm.slice(0,4)!==jy)jm='';
+  var mk2=Object.keys(ms).filter(function(k){return k.slice(0,4)===jy}).sort().reverse();
+  return {yk:yk,ys:ys,ms:ms,mk:mk2,
+    ych:'<div class="chips" id="jyc">'+yk.map(function(y){return '<button data-y="'+y+'" aria-pressed="'+(y===jy)+'">'+y+'년<small>'+ys[y]+'</small></button>'}).join('')+'</div>'}}
+function jBind(){
+  if($('jyc'))$('jyc').onclick=function(e){var b=e.target.closest('[data-y]');if(b){jy=b.dataset.y;jm='';jList()}};
+  $('jvw').onclick=function(e){var b=e.target.closest('[data-v]');if(b){jv=b.dataset.v;jList()}}}
 function jList(){
-  var R=J.rows,ms={};R.forEach(function(r){var k=r.at.slice(0,7);ms[k]=(ms[k]||0)+1});var keys=Object.keys(ms).sort().reverse();
-  if(!jm||!ms[jm])jm=keys[0]||'';
-  var L=R.filter(function(r){return r.at.slice(0,7)===jm&&(jf==='all'||(jf==='open'?!r.end:!!r.end))&&(!jq||(r.content+' '+r.who+' '+r.res).indexOf(jq)>=0)});
+  var R=J.rows,C=jChips(R);
   var open=R.filter(function(r){return !r.end}).length;
-  $('app').innerHTML='<div class="sum"><span><b>'+open+'</b>진행 중</span><span class="mute" style="align-self:end">전체 '+R.length+'건</span></div>'+
-   '<div class="chips" id="jmc">'+keys.map(function(k){return '<button data-m="'+k+'" aria-pressed="'+(k===jm)+'">'+(+k.slice(5))+'월<small>'+ms[k]+'</small></button>'}).join('')+'</div>'+
+  var head='<div class="bar"><div class="seg" id="jvw"><button data-v="list" aria-pressed="'+(jv==='list')+'">목록</button><button data-v="stats" aria-pressed="'+(jv==='stats')+'">분석</button></div><span class="sp"></span><button class="who" id="jre" type="button">새로고침</button></div>';
+  if(jv==='stats'){$('app').innerHTML=head+'<div style="margin-top:10px">'+C.ych+'</div>'+jStats(R.filter(function(r){return r.at.slice(0,4)===jy}));jBind();$('jre').onclick=function(){J.at=0;route()};return}
+  var L=R.filter(function(r){return r.at.slice(0,4)===jy&&(!jm||r.at.slice(0,7)===jm)&&(jf==='all'||(jf==='open'?!r.end:!!r.end))&&(!jq||(r.content+' '+r.who+' '+r.res).indexOf(jq)>=0)});
+  $('app').innerHTML=head+'<div class="sum"><span><b>'+open+'</b>진행 중</span><span class="mute" style="align-self:end">전체 '+R.length+'건</span></div>'+C.ych+
+   '<div class="chips" id="jmc"><button data-m="" aria-pressed="'+(jm==='')+'">'+jy+'년 전체<small>'+(C.ys[jy]||0)+'</small></button>'+C.mk.map(function(k){return '<button data-m="'+k+'" aria-pressed="'+(k===jm)+'">'+(+k.slice(5))+'월<small>'+C.ms[k]+'</small></button>'}).join('')+'</div>'+
    '<div class="bar"><div class="seg" id="jfs">'+[['all','전체'],['open','진행 중'],['done','완료']].map(function(x){return '<button data-f="'+x[0]+'" aria-pressed="'+(jf===x[0])+'">'+x[1]+'</button>'}).join('')+'</div><input class="srch" id="jq" type="search" placeholder="찾기" value="'+esc(jq)+'"></div>'+
    '<div class="list">'+(L.length?L.map(function(r){var p=(r.before[0]||r.after[0]);
      return '<a class="it j" href="#jj/'+r.id+'"><span class="th">'+(p?'<img src="'+esc(jUrl(thumbP(p)))+'" alt="" loading="lazy" onerror="this.onerror=null;this.src=\''+esc(jUrl(p))+'\'">':'')+'</span><span class="tx"><span class="t">'+esc(r.content)+'</span>'+
-       '<span class="meta"><span>'+jDate(r.at)+'</span><span>'+esc(r.who)+'</span></span></span><span class="st '+(r.end?'done':'open')+'">'+(r.end?'완료':'진행 중')+'</span></a>'}).join(''):'<div class="empty">조건에 맞는 요청이 없습니다.</div>')+'</div>'+
-   '<div style="text-align:center;margin-top:14px"><button class="who" id="jre" type="button">새로고침</button></div>';
+       '<span class="meta"><span>'+(jm?'':r.at.slice(0,4)+'/')+jDate(r.at)+'</span><span>'+esc(r.who)+'</span></span></span><span class="st '+(r.end?'done':'open')+'">'+(r.end?'완료':'진행 중')+'</span></a>'}).join(''):'<div class="empty">조건에 맞는 요청이 없습니다.</div>')+'</div>';
+  jBind();
   $('jmc').onclick=function(e){var b=e.target.closest('[data-m]');if(b){jm=b.dataset.m;jList()}};
   $('jfs').onclick=function(e){var b=e.target.closest('[data-f]');if(b){jf=b.dataset.f;jList()}};
   $('jq').oninput=function(){jq=this.value.trim();var pos=this.selectionStart;jList();var q=$('jq');q.focus();try{q.setSelectionRange(pos,pos)}catch(x){}};
   $('jre').onclick=function(){J.at=0;route()}}
+/* 정정 일지 분석(고른 해 기준) */
+function jPlace(r){var m=/^\[([^\]]+)\]/.exec(r.content),PL=['수직','수평','열처리','축로','기타'];
+  if(m){var f=m[1].split('·')[0].trim();if(PL.indexOf(f)>=0)return f}
+  var best='',bi=1e9;PL.slice(0,4).forEach(function(p){var i=r.content.indexOf(p);if(i>=0&&i<bi){bi=i;best=p}});return best||'기타'}
+function jBars(items,total){var mx=Math.max(1,Math.max.apply(null,items.map(function(x){return x[1]})));
+  return '<div class="box">'+(items.length?items.map(function(x){return '<div class="hb"><span>'+esc(x[0])+'</span><span class="tr"><i style="width:'+(x[1]/mx*100)+'%;background:var(--acc)"></i></span><span class="mute" style="text-align:right">'+x[1]+'건</span></div>'}).join(''):'<div class="mute">자료가 없습니다.</div>')+'</div>'}
+function jStats(R0){var R=R0.filter(function(r){return !/^\[추가사진/.test(r.content)}),t=today();
+  var open=R.filter(function(r){return !r.end}),dn=R.filter(function(r){return r.end&&Date.parse(r.end)>=Date.parse(r.at)});
+  var avg=dn.length?Math.round(dn.reduce(function(s,r){return s+(Date.parse(r.end)-Date.parse(r.at))/864e5},0)/dn.length*10)/10:0;
+  var kpi='<div class="kpi"><div><b>'+R.length+'</b><span>'+jy+'년 요청</span></div><div><b style="color:var(--open)">'+open.length+'</b><span>진행 중</span></div><div><b style="color:var(--done)">'+(R.length-open.length)+'</b><span>완료</span></div><div><b>'+avg+'일</b><span>평균 처리 기간</span></div><div><b>'+R.filter(function(r){return r.rail}).length+'</b><span>난간대</span></div></div>';
+  var mon=[];for(var m=1;m<=12;m++){var k=jy+'-'+pad(m);mon.push([m+'월',R.filter(function(r){return r.at.slice(0,7)===k}).length])}
+  var pl={},co={},nm={};R.forEach(function(r){var p=jPlace(r);pl[p]=(pl[p]||0)+1;if(r.co)co[r.co]=(co[r.co]||0)+1;var n=(r.nm+(r.who.split(' ').slice(2).join(' ')?' '+r.who.split(' ').slice(2).join(' '):'')).trim();if(r.nm)nm[n]=(nm[n]||0)+1});
+  var srt=function(o,n){return Object.keys(o).map(function(k){return [k,o[k]]}).sort(function(a,b){return b[1]-a[1]}).slice(0,n)};
+  var old=open.slice().sort(function(a,b){return a.at<b.at?-1:1}).slice(0,8);
+  var oldH='<div class="box">'+(old.length?'<table class="t">'+old.map(function(r){return '<tr><td><a href="#jj/'+r.id+'">'+esc(r.content.slice(0,40))+'</a><div class="mute">'+esc(r.who)+'</div></td><td class="n">'+Math.max(0,Math.round((Date.parse(t)-Date.parse(r.at.slice(0,10)))/864e5))+'일</td></tr>'}).join('')+'</table>':'<div class="mute">진행 중인 건이 없습니다.</div>')+'</div>';
+  return '<div style="margin-top:14px">'+kpi+'</div><div class="sec">월별 요청</div>'+jBars(mon)+'<div class="sec">장소별</div>'+jBars(srt(pl,6))+'<div class="sec">회사별</div>'+jBars(srt(co,4))+'<div class="sec">요청자 상위</div>'+jBars(srt(nm,8))+'<div class="sec">오래된 진행 중 (경과 일수)</div>'+oldH}
 function jShow(id){var r=J.rows.filter(function(x){return x.id===id})[0];
   if(!r){$('app').innerHTML='<a class="back" href="#jj">← 목록</a><div class="empty">찾을 수 없습니다.</div>';return}
   $('app').innerHTML='<a class="back" href="#jj">← 목록</a><div class="box"><div class="bar"><span class="meta"><span>'+jDate(r.at)+' 요청</span><span>'+esc(r.who)+'</span></span><span class="sp"></span><span class="st '+(r.end?'done':'open')+'">'+(r.end?'완료':'진행 중')+'</span></div>'+
@@ -411,10 +439,12 @@ function pRpc(n,a){return fetch(JU+'/rest/v1/rpc/'+n,{method:'POST',headers:{api
 function pushOK(){return 'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window}
 function isIOS(){return /iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)}
 function swReady(){return navigator.serviceWorker.register('sw.js').then(function(){return navigator.serviceWorker.ready})}
+function myName(){return lsGet('sv-name')||''}
+function bellNameShow(){$('bellName').textContent=myName()?'이름: '+myName()+' (내가 올린 글은 알림이 오지 않습니다)':'이름을 고르면 내가 올린 글은 알림이 오지 않습니다.'}
 function bellMark(on){$('bBell').classList.toggle('on',!!on)}
 function bellOpen(){
   var m=$('bellMsg'),err=$('bellErr');err.textContent='';$('bellTest').hidden=true;$('bellOpts').hidden=false;$('bellSave').hidden=false;$('bellSave').textContent='알림 켜기';$('bJj').checked=true;$('bSf').checked=true;
-  $('bellDlg').showModal();
+  bellNameShow();$('bellDlg').showModal();
   if(!pushOK()){$('bellOpts').hidden=true;$('bellSave').hidden=true;
     m.textContent=isIOS()?'아이폰은 Safari에서 「공유 → 홈 화면에 추가」로 만든 앱을 열어야 알림을 받을 수 있습니다. 홈 화면의 「안전 개선」 앱에서 다시 눌러 주세요.':'이 브라우저는 알림 기능을 지원하지 않습니다.';return}
   if(Notification.permission==='denied'){$('bellOpts').hidden=true;$('bellSave').hidden=true;m.textContent='알림이 차단되어 있습니다. 폰 설정에서 이 앱의 알림을 허용한 뒤 다시 열어 주세요.';return}
@@ -425,13 +455,14 @@ function bellOpen(){
       if(v){$('bJj').checked=!!v.jj;$('bSf').checked=!!v.sf;$('bellSave').textContent='저장';$('bellTest').hidden=false;m.textContent='이 폰에 알림이 켜져 있습니다. 항목을 끄고 저장하면 그 알림은 오지 않습니다. 둘 다 끄면 알림이 완전히 꺼집니다.'}})
   }).catch(function(e){err.textContent=e.message})}
 $('bBell').onclick=bellOpen;
+$('bellWho').onclick=function(){(D.viewers?Promise.resolve():load()).then(function(){pickName(function(){bellNameShow();swReady().then(function(r){return r.pushManager.getSubscription()}).then(function(sub){if(sub)pRpc('push_set_name',{p_endpoint:sub.endpoint,p_name:myName()}).catch(function(){})})})}).catch(function(e){$('bellErr').textContent=e.message})};
 $('bellClose').onclick=function(){$('bellDlg').close()};
 $('bellSave').onclick=function(){var err=$('bellErr'),jj=$('bJj').checked,sf=$('bSf').checked,b=$('bellSave');err.textContent='';
   b.disabled=true;
   Notification.requestPermission().then(function(p){if(p!=='granted')throw new Error('알림이 허용되지 않았습니다.');return swReady()})
   .then(function(reg){return reg.pushManager.getSubscription().then(function(sub){return sub||reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:u8(VAPID)})})})
   .then(function(sub){var j=sub.toJSON();
-    return pRpc('push_save',{p_endpoint:sub.endpoint,p_p256dh:j.keys.p256dh,p_auth:j.keys.auth,p_jj:jj,p_sf:sf}).then(function(){
+    return pRpc('push_save',{p_endpoint:sub.endpoint,p_p256dh:j.keys.p256dh,p_auth:j.keys.auth,p_jj:jj,p_sf:sf,p_name:myName()}).then(function(){
       if(!jj&&!sf){return sub.unsubscribe().then(function(){lsSet('sv-push','');bellMark(false);$('bellDlg').close()})}
       lsSet('sv-push','1');bellMark(true);$('bellSave').textContent='저장';$('bellTest').hidden=false;err.style.color='var(--done)';err.textContent='저장했습니다.'})})
   .catch(function(e){err.style.color='';err.textContent=e.message}).then(function(){b.disabled=false})};
@@ -441,7 +472,7 @@ $('bellTest').onclick=function(){var err=$('bellErr');err.style.color='';err.tex
   .then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error==='not subscribed'?'서버에 등록되어 있지 않습니다. 「저장」을 눌러 주세요.':'보내지 못했습니다.');err.style.color='var(--done)';err.textContent='보냈습니다. 잠시 뒤 알림이 옵니다.'})})
   .catch(function(e){err.style.color='';err.textContent=e.message})};
 (function(){bellMark(lsGet('sv-push')==='1');
-  if(pushOK()&&Notification.permission==='granted'){swReady().then(function(reg){return reg.pushManager.getSubscription()}).then(function(sub){bellMark(!!sub);lsSet('sv-push',sub?'1':'')}).catch(function(){})}})();
+  if(pushOK()&&Notification.permission==='granted'){swReady().then(function(reg){return reg.pushManager.getSubscription()}).then(function(sub){bellMark(!!sub);lsSet('sv-push',sub?'1':'');if(sub&&myName())pRpc('push_set_name',{p_endpoint:sub.endpoint,p_name:myName()}).catch(function(){})}).catch(function(){})}})();
 
 /* 새 판 확인: 서버 파일이 바뀌었으면(ETag) 한 번 새로 불러옴 — 홈 화면 앱이 옛 화면을 붙잡는 문제 방지 */
 (function(){try{fetch(location.pathname,{method:'HEAD',cache:'no-store'}).then(function(r){var t=r.headers.get('etag')||r.headers.get('last-modified');if(!t)return;var o=lsGet('sv-ver');lsSet('sv-ver',t);
