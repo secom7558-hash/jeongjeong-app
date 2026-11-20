@@ -139,6 +139,16 @@ dialog img{max-width:96vw;max-height:92vh;display:block}
 .jph.n1 img{aspect-ratio:auto;max-height:70vh;object-fit:contain}
 @media (min-width:900px){.it.j{display:flex}}
 
+/* 사진 배치(폰·PC 공통): 1장 크게, 2·4장 2열, 3·5장 이상 3열 */
+@media screen{
+ .pics{display:grid;gap:6px;grid-template-columns:repeat(3,1fr)}
+ .pics.n1{grid-template-columns:1fr}
+ .pics.n2,.pics.n4{grid-template-columns:1fr 1fr}
+ .pics img,.pics a.pdf{width:100%;height:auto;aspect-ratio:4/3;object-fit:cover}
+ .pics.n1 img{aspect-ratio:auto;max-height:62vh;object-fit:contain;background:var(--head)}
+ .pics a.pdf{font-size:13px}
+}
+
 /* ---------- 컴퓨터(넓은 화면) ---------- */
 .pcOnly{display:none}
 .pbrand{display:none}
@@ -244,7 +254,7 @@ function load(){return Promise.all([
 
 /* ---------- 공통 조각 ---------- */
 function stLabel(i){return i.status==='done'?'<span class="st done">완료</span>':'<span class="st open">진행 중</span>'}
-function pics(ps){var wide=window.matchMedia&&matchMedia('(min-width:900px)').matches;return ps&&ps.length?'<div class="pics n'+Math.min(ps.length,5)+'">'+ps.map(function(p){return isPdf(p)?'<a class="pdf" href="'+esc(pubUrl(p))+'" target="_blank" rel="noopener">PDF<span>열기</span></a>':'<img src="'+esc(pubUrl(wide?p:thumbP(p)))+'" data-big="'+esc(p)+'" alt="사진" loading="lazy">'}).join('')+'</div>':''}
+function pics(ps){var wide=window.matchMedia&&matchMedia('(min-width:900px)').matches||(ps&&(ps.length<=2||ps.length===4));return ps&&ps.length?'<div class="pics n'+Math.min(ps.length,5)+'">'+ps.map(function(p){return isPdf(p)?'<a class="pdf" href="'+esc(pubUrl(p))+'" target="_blank" rel="noopener">PDF<span>열기</span></a>':'<img src="'+esc(pubUrl(wide?p:thumbP(p)))+'" data-big="'+esc(p)+'" alt="사진" loading="lazy">'}).join('')+'</div>':''}
 function firstThumb(ps){var p=(ps||[]).filter(function(x){return !isPdf(x)})[0];return p?'<img src="'+esc(pubUrl(thumbP(p)))+'" alt="" loading="lazy">':(ps&&ps.length?'PDF':'')}
 function stepsOf(id){return D.steps.filter(function(s){return s.issue_id===id})}
 function notesOf(id,sid){return D.notes.filter(function(n){return n.issue_id===id&&(n.step_id||null)===(sid||null)})}
