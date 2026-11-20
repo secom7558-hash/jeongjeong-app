@@ -141,6 +141,17 @@ dialog img{max-width:96vw;max-height:92vh;display:block}
  .lhd{display:grid;grid-template-columns:96px minmax(0,1fr) 120px 110px 90px 80px 90px;gap:14px;padding:8px 16px;background:var(--head);border-bottom:1px solid var(--line);font-size:var(--fs-s);font-weight:700;color:var(--mute)}
  .list{overflow:hidden}
 }
+.menu .tools{margin-left:auto;display:flex;gap:6px;align-items:center;padding-bottom:6px}
+@media screen and (min-width:900px){
+ .dgrid .col1{position:sticky;top:calc(var(--th,100px) + 14px);max-height:calc(100vh - var(--th,100px) - 28px);overflow:auto;scrollbar-width:thin}
+ .dgrid .box{padding:18px 20px}
+ .dgrid h1{font-size:22px;line-height:30px}
+ .pics{display:grid;gap:8px;grid-template-columns:repeat(3,1fr)}
+ .pics.n1{grid-template-columns:1fr}
+ .pics.n2,.pics.n4{grid-template-columns:1fr 1fr}
+ .pics img,.pics a.pdf{width:100%;height:auto;aspect-ratio:4/3;object-fit:cover}
+ .pics.n1 img{aspect-ratio:auto;max-height:380px;object-fit:contain;background:var(--head)}
+}
 @media print{
  :root{--bg:#fff;--paper:#fff;--ink:#000;--mute:#444;--line:#999;--soft:#ccc;--head:#eee;--acc:#000;--done:#000;--open:#000;--fs-s:8pt;--fs-m:9pt;--fs-b:10pt;--fs-t:13pt;--lh:14pt;--w:none;color-scheme:light}
  body{font-size:10pt;background:#fff}
@@ -163,9 +174,9 @@ dialog img{max-width:96vw;max-height:92vh;display:block}
 </style>
 </head>
 <body>
-<div class="top">
+<div class="top" id="top">
   <div class="brand">HYUNDAI <b>IMC</b><span>중공업팀</span></div>
-  <nav class="menu"><span class="ttl">안전 개선</span><a class="pc" href="https://secom7558-hash.github.io/jeongjeong-app/view.html">정정 일지</a><b>안전 개선</b></nav>
+  <nav class="menu"><span class="ttl">안전 개선</span><a class="pc" href="https://secom7558-hash.github.io/jeongjeong-app/view.html">정정 일지</a><b>안전 개선</b><span class="tools" id="tt"></span></nav>
 </div>
 <div class="wrap pbrand" style="padding-bottom:0">HYUNDAI IMC 중공업팀</div>
 <main class="wrap" id="app"><div class="load">불러오는 중입니다…</div></main>
@@ -205,7 +216,7 @@ function load(){return Promise.all([
 
 /* ---------- 공통 조각 ---------- */
 function stLabel(i){return i.status==='done'?'<span class="st done">완료</span>':'<span class="st open">진행 중</span>'}
-function pics(ps){return ps&&ps.length?'<div class="pics">'+ps.map(function(p){return isPdf(p)?'<a class="pdf" href="'+esc(pubUrl(p))+'" target="_blank" rel="noopener">PDF<span>열기</span></a>':'<img src="'+esc(pubUrl(thumbP(p)))+'" data-big="'+esc(p)+'" alt="사진" loading="lazy">'}).join('')+'</div>':''}
+function pics(ps){var wide=window.matchMedia&&matchMedia('(min-width:900px)').matches;return ps&&ps.length?'<div class="pics n'+Math.min(ps.length,5)+'">'+ps.map(function(p){return isPdf(p)?'<a class="pdf" href="'+esc(pubUrl(p))+'" target="_blank" rel="noopener">PDF<span>열기</span></a>':'<img src="'+esc(pubUrl(wide?p:thumbP(p)))+'" data-big="'+esc(p)+'" alt="사진" loading="lazy">'}).join('')+'</div>':''}
 function firstThumb(ps){var p=(ps||[]).filter(function(x){return !isPdf(x)})[0];return p?'<img src="'+esc(pubUrl(thumbP(p)))+'" alt="" loading="lazy">':(ps&&ps.length?'PDF':'')}
 function stepsOf(id){return D.steps.filter(function(s){return s.issue_id===id})}
 function notesOf(id,sid){return D.notes.filter(function(n){return n.issue_id===id&&(n.step_id||null)===(sid||null)})}
@@ -258,11 +269,11 @@ window.addEventListener('hashchange',route);
 document.addEventListener('visibilitychange',function(){if(!document.hidden&&D.at&&Date.now()-D.at>60000){D.at=0;route()}});
 function render(){if(location.hash&&/^#i\//.test(location.hash))return;
   var n=me(),open=D.issues.filter(function(i){return i.status!=='done'}).length,done=D.issues.length-open;
-  var head='<div class="bar tb np"><div class="seg" id="vw"><button data-v="list" aria-pressed="'+(view==='list')+'">목록</button><button data-v="stats" aria-pressed="'+(view==='stats')+'">분석</button></div><span class="sp"></span>'+toolsHtml()+
+  var head='<div class="bar tb np"><div class="seg" id="vw"><button data-v="list" aria-pressed="'+(view==='list')+'">목록</button><button data-v="stats" aria-pressed="'+(view==='stats')+'">분석</button></div><span class="sp"></span>'+
     '<button class="who" id="who" type="button">'+(n?esc(n)+' '+esc(title(n)):'이름 고르기')+'</button></div>';
   $('app').innerHTML=head+(view==='stats'?statsHtml(D.issues,D.steps,D.notes):listHtml(open,done));
   $('vw').onclick=function(e){var b=e.target.closest('[data-v]');if(b){view=b.dataset.v;render()}};
-  $('who').onclick=function(){pickName()};bindTools();
+  $('who').onclick=function(){pickName()};
   if(view==='list'){$('fst').onclick=function(e){var b=e.target.closest('[data-f]');if(b){fSt=b.dataset.f;render()}};$('fpart').onchange=function(){fPart=this.value;render()}}}
 function listHtml(open,done){
   var L=D.issues.filter(function(i){return(fSt==='all'||(fSt==='done'?i.status==='done':i.status!=='done'))&&(!fPart||i.part===fPart)});
@@ -280,14 +291,14 @@ function noteBlock(iid,sid){var ns=notesOf(iid,sid),k=iid+'_'+(sid||'');
 function showIssue(id){var i=D.issues.filter(function(x){return x.id===id})[0];
   if(!i){$('app').innerHTML='<a class="back" href="#">← 목록</a><div class="empty">찾을 수 없습니다.</div>';return}
   var ss=stepsOf(id);
-  $('app').innerHTML='<div class="bar tb np"><a class="back" href="#">← 목록</a><span class="sp"></span>'+toolsHtml()+'</div><div class="dgrid"><div class="col1">'+
+  $('app').innerHTML='<div class="bar np"><a class="back" href="#">← 목록</a></div><div class="dgrid"><div class="col1">'+
    '<div class="box"><div class="bar"><span class="meta"><span>'+esc(i.part)+'</span><span>'+fmtD(i.reg_date)+' 등록</span>'+(i.done_date?'<span>'+fmtD(i.done_date)+' 완료</span>':'')+'</span><span class="sp"></span>'+stLabel(i)+'</div>'+
    '<h1>'+esc(i.title)+'</h1>'+(i.crew||i.freq?'<div class="kv">'+(i.crew?'<em>작업인원</em><span>'+esc(i.crew)+'</span>':'')+(i.freq?'<em>작업빈도</em><span>'+esc(i.freq)+'</span>':'')+'</div>':'')+(i.risks&&i.risks.length?'<div class="tags">'+i.risks.map(function(r){return '<span class="tag">'+esc(r)+'</span>'}).join('')+'</div>':'')+
    pics(i.photos)+(i.body?'<div class="body">'+esc(i.body)+'</div>':'')+noteBlock(id,null)+'</div></div><div class="col2">'+
    '<div class="sec">개선 과정 '+ss.length+'</div>'+
    (ss.length||i.status==='done'?'<div class="tl">'+ss.map(function(s){return '<div class="step"><div class="d">'+fmtD(s.step_date)+'</div>'+(s.workers?'<div class="kv" style="margin-top:0"><em>작업자</em><span>'+esc(s.workers)+'</span></div>':'')+(s.body?'<div class="body" style="margin-top:6px">'+esc(s.body)+'</div>':'')+pics(s.photos)+noteBlock(id,s.id)+'</div>'}).join('')+
      (i.status==='done'?'<div class="step fin"><div class="d">'+fmtD(i.done_date)+' 최종 개선 완료</div></div>':'')+'</div>':'<div class="empty" style="padding:14px">아직 개선 과정이 없습니다.</div>')+'</div></div>';
-  bindTools();window.scrollTo(0,0)}
+  window.scrollTo(0,0)}
 
 /* 의견 등록 */
 $('app').addEventListener('click',function(e){var b=e.target.closest('[data-note]');if(!b)return;
@@ -325,6 +336,8 @@ function statsHtml(IS,SS,NS){var t=today(),done=IS.filter(function(i){return i.s
 /* 새 판 확인: 서버 파일이 바뀌었으면(ETag) 한 번 새로 불러옴 — 홈 화면 앱이 옛 화면을 붙잡는 문제 방지 */
 (function(){try{fetch(location.pathname,{method:'HEAD',cache:'no-store'}).then(function(r){var t=r.headers.get('etag')||r.headers.get('last-modified');if(!t)return;var o=lsGet('sv-ver');lsSet('sv-ver',t);
   if(o&&o!==t&&!/[?&]v=/.test(location.search))location.replace(location.pathname+'?v='+Date.now()+location.hash)}).catch(function(){})}catch(e){}})();
+$('tt').innerHTML=toolsHtml();bindTools();
+function setTh(){document.documentElement.style.setProperty('--th',$('top').offsetHeight+'px')}setTh();window.addEventListener('resize',setTh);
 route();
 </script>
 </body>
