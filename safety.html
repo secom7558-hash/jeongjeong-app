@@ -27,6 +27,11 @@ a{color:inherit}
 .menu{display:flex;gap:22px;margin-top:6px}
 .menu a,.menu b{display:block;padding:8px 0 9px;font-size:15px;text-decoration:none;color:var(--mute);border-bottom:2px solid transparent;font-weight:600}
 .menu b{color:var(--ink);border-bottom-color:var(--acc)}
+/* 폰(앱): 「안전 개선」만. 컴퓨터(넓은 화면)에서만 「정정 일지」 메뉴도 보임 */
+.menu .pc{display:none}
+.menu .ttl{display:block;padding:6px 0 10px;font-size:18px;font-weight:700;color:var(--ink)}
+.menu b{display:none}
+@media (min-width:900px){.menu .pc,.menu b{display:block}.menu .ttl{display:none}}
 .wrap{max-width:720px;margin:0 auto;padding:14px 16px 40px}
 .bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .sp{flex:1}
@@ -107,7 +112,7 @@ dialog img{max-width:96vw;max-height:92vh;display:block}
 <body>
 <div class="top">
   <div class="brand">HYUNDAI <b>IMC</b><span>중공업팀</span></div>
-  <nav class="menu"><a href="view.html">정정 일지</a><b>안전 개선</b></nav>
+  <nav class="menu"><span class="ttl">안전 개선</span><a class="pc" href="view.html">정정 일지</a><b>안전 개선</b></nav>
 </div>
 <main class="wrap" id="app"><div class="load">불러오는 중입니다…</div></main>
 <dialog id="dlg"><img id="dlgImg" alt="사진"></dialog>
