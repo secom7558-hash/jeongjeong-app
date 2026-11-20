@@ -87,7 +87,8 @@ h1{font-size:var(--fs-t);line-height:28px;margin:6px 0 8px}
 .note .w{color:var(--mute);font-size:var(--fs-s);white-space:nowrap}
 .lkd{color:#d6455d;margin-left:2px}
 .nact{margin-top:2px;display:flex;gap:14px}
-.nact button{border:0;background:none;padding:4px 0;font-size:var(--fs-s);color:var(--mute);cursor:pointer;text-decoration:underline}
+.nact button{border:0;background:none;padding:6px 0;font-size:var(--fs-s);color:var(--mute);cursor:pointer;text-decoration:underline}
+.nact .lkb{text-decoration:none;font-size:var(--fs-m)}.nact .lkb.on{color:#d6455d}
 .nedit{display:flex;gap:6px;margin-top:4px}.nedit input{flex:1;min-width:0;border:1px solid var(--line);border-radius:6px;background:var(--bg);padding:6px 8px;font-size:var(--fs-m)}
 .note .tx2{font-size:var(--fs-m);line-height:21px;white-space:pre-wrap}
 .nin{display:flex;gap:6px;margin-top:8px}
@@ -143,6 +144,7 @@ dialog img{max-width:96vw;max-height:92vh;display:block}
 .jph.n1 img{aspect-ratio:auto;max-height:70vh;object-fit:contain}
 @media (min-width:900px){.it.j{display:flex}}
 
+@media (max-width:899px){input,select,textarea{font-size:16px!important}}
 /* 사진 배치(폰·PC 공통): 1장 크게, 2·4장 2열, 3·5장 이상 3열 */
 @media screen{
  .pics{display:grid;gap:6px;grid-template-columns:repeat(3,1fr)}
@@ -253,8 +255,9 @@ function isPdf(p){return /\.pdf$/i.test(p)}
 function thumbP(p){return p.replace(/\.jpg$/,'_t.jpg')}
 function load(){return Promise.all([
   getAll('issues?select=*&order=reg_date.desc,created_at.desc'),getAll('steps?select=*&order=step_date.asc,created_at.asc'),
-  getAll('notes?select=*&order=created_at.asc'),getAll('viewers?select=name,title&order=sort')
-]).then(function(r){D={issues:r[0],steps:r[1],notes:r[2],viewers:r[3],at:Date.now()}})}
+  getAll('notes?select=*&order=created_at.asc'),getAll('viewers?select=name,title&order=sort'),getAll('note_likes?select=note_id,name&order=created_at')
+]).then(function(r){D={issues:r[0],steps:r[1],notes:r[2],viewers:r[3],likes:r[4]||[],at:Date.now()}})}
+function likesOf(id){return(D.likes||[]).filter(function(l){return l.note_id===id})}
 
 /* ---------- 공통 조각 ---------- */
 function stLabel(i){return i.status==='done'?'<span class="st done">완료</span>':'<span class="st open">진행 중</span>'}
@@ -337,7 +340,7 @@ function listHtml(open,done){
        '<span class="cc">'+esc(i.part)+'</span><span class="cc">'+fmtD(i.reg_date)+'</span><span class="cc">'+(sc?sc+'회':'-')+'</span><span class="cc">'+(nc||'-')+'</span>'+stLabel(i)+'</a>'}).join(''):'<div class="empty">'+(D.issues.length?'조건에 맞는 문제점이 없습니다.':'아직 등록된 문제점이 없습니다.')+'</div>')+'</div>'}
 
 function noteBlock(iid,sid){var ns=notesOf(iid,sid),k=iid+'_'+(sid||'');
-  return '<div class="notes">'+ns.map(function(x){var mine=me()&&x.name===me();return '<div class="note" data-nid="'+x.id+'"><div class="h"><b>'+esc(x.name)+(title(x.name)?' '+esc(title(x.name)):'')+(x.liked?' <span class="lkd" title="올린 사람이 좋아요">♥</span>':'')+'</b><span class="w">'+ago(x.created_at)+(x.edited_at?' · 수정됨':'')+'</span></div><div class="tx2">'+esc(x.body)+'</div>'+(mine?'<div class="nact"><button type="button" data-nedit="'+x.id+'">수정</button><button type="button" data-ndel="'+x.id+'">삭제</button></div>':'')+'</div>'}).join('')+
+  return '<div class="notes">'+ns.map(function(x){var mine=me()&&x.name===me();return '<div class="note" data-nid="'+x.id+'"><div class="h"><b>'+esc(x.name)+(title(x.name)?' '+esc(title(x.name)):'')+''+'</b><span class="w">'+ago(x.created_at)+(x.edited_at?' · 수정됨':'')+'</span></div><div class="tx2">'+esc(x.body)+'</div>'+'<div class="nact">'+(function(){var L=likesOf(x.id),on=me()&&L.some(function(l){return l.name===me()});return '<button type="button" class="lkb'+(on?' on':'')+'" data-like="'+x.id+'" title="'+esc(L.map(function(l){return l.name}).join(', '))+'">'+(on?'♥':'♡')+(L.length?' '+L.length:' 좋아요')+'</button>'})()+(mine?'<button type="button" data-nedit="'+x.id+'">수정</button><button type="button" data-ndel="'+x.id+'">삭제</button>':'')+'</div>'+'</div>'}).join('')+
    '<div class="nin"><input type="text" id="n_'+k+'" maxlength="500" placeholder="의견 남기기"><button type="button" data-note="'+k+'">등록</button></div></div>'}
 function showIssue(id){var i=D.issues.filter(function(x){return x.id===id})[0];
   if(!i){$('app').innerHTML='<a class="back" href="#">← 목록</a><div class="empty">찾을 수 없습니다.</div>';return}
@@ -354,6 +357,7 @@ function showIssue(id){var i=D.issues.filter(function(x){return x.id===id})[0];
 /* 의견 등록 */
 function refreshIssue(pid){D.at=0;return load().then(function(){var y=window.scrollY;showIssue(pid);window.scrollTo(0,y)})}
 $('app').addEventListener('click',function(e){var q,mm=/^#i\/(.+)$/.exec(location.hash),pid=mm&&mm[1];
+  if(q=e.target.closest('[data-like]')){var nid=q.dataset.like,go=function(){if(busy)return;busy=true;rpc('toggle_like',{p_note:nid,p_name:me()}).then(function(){return refreshIssue(pid)}).catch(function(er){alert(er.message)}).then(function(){busy=false})};if(!me())pickName(go);else go();return}
   if(q=e.target.closest('[data-ndel]')){if(!confirm('내 의견을 지울까요? 되돌릴 수 없습니다.'))return;rpc('delete_own_note',{p_id:q.dataset.ndel,p_name:me()}).then(function(){return refreshIssue(pid)}).catch(function(er){alert(er.message)});return}
   if(q=e.target.closest('[data-nedit]')){var nn=D.notes.filter(function(x){return x.id===q.dataset.nedit})[0],row=q.closest('.note');if(!nn||!row)return;
     row.querySelector('.tx2').outerHTML='<div class="nedit"><input type="text" maxlength="500" value="'+esc(nn.body)+'"><button class="btn" data-nsave="'+nn.id+'" type="button">저장</button></div>';var a=row.querySelector('.nact');if(a)a.innerHTML='<button type="button" data-ncancel="1">취소</button>';row.querySelector('.nedit input').focus();return}
