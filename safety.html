@@ -116,6 +116,13 @@ dialog img{max-width:96vw;max-height:92vh;display:block}
 .err{color:#b3261e;font-size:var(--fs-m);margin-top:6px}
 .load{padding:40px 0;text-align:center;color:var(--mute)}
 
+.brandrow{display:flex;align-items:center;justify-content:space-between}
+.bell{position:relative;border:0;background:none;color:var(--mute);padding:4px 2px;cursor:pointer;line-height:0}
+.bell i{display:none;position:absolute;top:3px;right:0;width:8px;height:8px;border-radius:50%;background:var(--open)}
+.bell.on{color:var(--acc)}.bell.on i{display:block;background:var(--done)}
+.bo{display:flex;gap:8px;align-items:flex-start;padding:8px 0;font-size:var(--fs-m);line-height:20px}
+.bo input{margin-top:3px;flex:none}
+
 /* ---------- 정정 일지(폰) ---------- */
 .chips{display:flex;gap:6px;overflow-x:auto;padding:2px 0 8px;margin:0 calc(var(--g)*-1);padding-left:var(--g);padding-right:var(--g);scrollbar-width:none}
 .chips::-webkit-scrollbar{display:none}
@@ -191,12 +198,16 @@ dialog img{max-width:96vw;max-height:92vh;display:block}
 </head>
 <body>
 <div class="top" id="top">
-  <div class="brand">HYUNDAI <b>IMC</b><span>중공업팀</span></div>
+  <div class="brandrow"><div class="brand">HYUNDAI <b>IMC</b><span>중공업팀</span></div><button id="bBell" class="bell" type="button" aria-label="알림 설정" title="알림 설정"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 1 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><i></i></button></div>
   <nav class="menu"><a id="mJ" class="mob" href="#jj">정정 일지</a><a class="pc" href="view.html">정정 일지</a><a id="mS" class="on" href="#">안전 개선</a><span class="tools" id="tt"></span></nav>
 </div>
 <div class="wrap pbrand" style="padding-bottom:0">HYUNDAI IMC 중공업팀</div>
 <main class="wrap" id="app"><div class="load">불러오는 중입니다…</div></main>
 <dialog id="dlg"><img id="dlgImg" alt="사진"></dialog>
+<dialog id="bellDlg"><div class="pick"><h2>알림 설정</h2><div class="mute" id="bellMsg"></div>
+  <div id="bellOpts" style="margin-top:12px"><label class="bo"><input type="checkbox" id="bJj"> 정정 일지 — 새 요청·결과가 올라올 때</label><label class="bo"><input type="checkbox" id="bSf"> 안전 개선 — 새 문제점·개선 과정·의견이 올라올 때</label></div>
+  <div class="err" id="bellErr"></div>
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap"><button class="btn ghost" id="bellTest" type="button" hidden>시험 알림</button><button class="btn" id="bellSave" type="button">알림 켜기</button><button class="btn ghost" id="bellClose" type="button">닫기</button></div></div></dialog>
 <dialog id="pickDlg"><div class="pick"><h2>이름을 골라 주세요</h2><div class="mute">의견에 이 이름으로 표시됩니다. 처음 한 번만 고르면 됩니다.</div><div class="g" id="pickList"></div><div style="text-align:right;margin-top:12px"><button class="btn ghost" id="pickClose" type="button">닫기</button></div></div></dialog>
 
 <script>
@@ -392,6 +403,45 @@ function jShow(id){var r=J.rows.filter(function(x){return x.id===id})[0];
    (r.end||r.res||r.after.length?'<div class="sec">결과</div><div class="box"><div class="meta">'+(r.end?jDate(r.end)+' 완료':'아직 완료 전')+'</div>'+(r.res?'<div class="body">'+esc(r.res)+'</div>':'')+jPh(r.after,'결과 사진')+'</div>':'')+
    (r.note?'<div class="meta" style="margin-top:12px">'+esc(r.note)+'</div>':'');
   window.scrollTo(0,0)}
+
+/* ---------- 알림(웹 푸시): 정정 일지·안전 개선 새 글 ---------- */
+var VAPID='BIOM1ER2dry7xMYenEDh1JfONxfNmHU5HFAEd4dorkdjlW93WtWLnEVd6y5_NkHpQIwWztI25WUzctqfDT_QDww';
+function u8(b){var p='='.repeat((4-b.length%4)%4),r=atob((b+p).replace(/-/g,'+').replace(/_/g,'/')),o=new Uint8Array(r.length);for(var i=0;i<r.length;i++)o[i]=r.charCodeAt(i);return o}
+function pRpc(n,a){return fetch(JU+'/rest/v1/rpc/'+n,{method:'POST',headers:{apikey:JK,Authorization:'Bearer '+JK,'Content-Type':'application/json'},body:JSON.stringify(a)}).catch(function(){throw new Error('인터넷 연결을 확인해 주세요')}).then(function(r){if(!r.ok)return r.text().then(function(t){throw new Error('서버 오류: '+t)});return r.status===204?null:r.json().catch(function(){return null})})}
+function pushOK(){return 'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window}
+function isIOS(){return /iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)}
+function swReady(){return navigator.serviceWorker.register('sw.js').then(function(){return navigator.serviceWorker.ready})}
+function bellMark(on){$('bBell').classList.toggle('on',!!on)}
+function bellOpen(){
+  var m=$('bellMsg'),err=$('bellErr');err.textContent='';$('bellTest').hidden=true;$('bellOpts').hidden=false;$('bellSave').hidden=false;$('bellSave').textContent='알림 켜기';$('bJj').checked=true;$('bSf').checked=true;
+  $('bellDlg').showModal();
+  if(!pushOK()){$('bellOpts').hidden=true;$('bellSave').hidden=true;
+    m.textContent=isIOS()?'아이폰은 Safari에서 「공유 → 홈 화면에 추가」로 만든 앱을 열어야 알림을 받을 수 있습니다. 홈 화면의 「안전 개선」 앱에서 다시 눌러 주세요.':'이 브라우저는 알림 기능을 지원하지 않습니다.';return}
+  if(Notification.permission==='denied'){$('bellOpts').hidden=true;$('bellSave').hidden=true;m.textContent='알림이 차단되어 있습니다. 폰 설정에서 이 앱의 알림을 허용한 뒤 다시 열어 주세요.';return}
+  m.textContent='켜면 이 폰으로 새 글 알림이 옵니다. 항목별로 끌 수 있습니다.';
+  swReady().then(function(reg){return reg.pushManager.getSubscription()}).then(function(sub){
+    if(!sub){return}
+    return pRpc('push_get',{p_endpoint:sub.endpoint}).then(function(v){
+      if(v){$('bJj').checked=!!v.jj;$('bSf').checked=!!v.sf;$('bellSave').textContent='저장';$('bellTest').hidden=false;m.textContent='이 폰에 알림이 켜져 있습니다. 항목을 끄고 저장하면 그 알림은 오지 않습니다. 둘 다 끄면 알림이 완전히 꺼집니다.'}})
+  }).catch(function(e){err.textContent=e.message})}
+$('bBell').onclick=bellOpen;
+$('bellClose').onclick=function(){$('bellDlg').close()};
+$('bellSave').onclick=function(){var err=$('bellErr'),jj=$('bJj').checked,sf=$('bSf').checked,b=$('bellSave');err.textContent='';
+  b.disabled=true;
+  Notification.requestPermission().then(function(p){if(p!=='granted')throw new Error('알림이 허용되지 않았습니다.');return swReady()})
+  .then(function(reg){return reg.pushManager.getSubscription().then(function(sub){return sub||reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:u8(VAPID)})})})
+  .then(function(sub){var j=sub.toJSON();
+    return pRpc('push_save',{p_endpoint:sub.endpoint,p_p256dh:j.keys.p256dh,p_auth:j.keys.auth,p_jj:jj,p_sf:sf}).then(function(){
+      if(!jj&&!sf){return sub.unsubscribe().then(function(){lsSet('sv-push','');bellMark(false);$('bellDlg').close()})}
+      lsSet('sv-push','1');bellMark(true);$('bellSave').textContent='저장';$('bellTest').hidden=false;err.style.color='var(--done)';err.textContent='저장했습니다.'})})
+  .catch(function(e){err.style.color='';err.textContent=e.message}).then(function(){b.disabled=false})};
+$('bellTest').onclick=function(){var err=$('bellErr');err.style.color='';err.textContent='보내는 중…';
+  swReady().then(function(reg){return reg.pushManager.getSubscription()}).then(function(sub){if(!sub)throw new Error('알림이 켜져 있지 않습니다.');
+    return fetch(JU+'/functions/v1/push-send',{method:'POST',headers:{'Content-Type':'application/json',apikey:JK,Authorization:'Bearer '+JK},body:JSON.stringify({action:'test',endpoint:sub.endpoint})})})
+  .then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error==='not subscribed'?'서버에 등록되어 있지 않습니다. 「저장」을 눌러 주세요.':'보내지 못했습니다.');err.style.color='var(--done)';err.textContent='보냈습니다. 잠시 뒤 알림이 옵니다.'})})
+  .catch(function(e){err.style.color='';err.textContent=e.message})};
+(function(){bellMark(lsGet('sv-push')==='1');
+  if(pushOK()&&Notification.permission==='granted'){swReady().then(function(reg){return reg.pushManager.getSubscription()}).then(function(sub){bellMark(!!sub);lsSet('sv-push',sub?'1':'')}).catch(function(){})}})();
 
 /* 새 판 확인: 서버 파일이 바뀌었으면(ETag) 한 번 새로 불러옴 — 홈 화면 앱이 옛 화면을 붙잡는 문제 방지 */
 (function(){try{fetch(location.pathname,{method:'HEAD',cache:'no-store'}).then(function(r){var t=r.headers.get('etag')||r.headers.get('last-modified');if(!t)return;var o=lsGet('sv-ver');lsSet('sv-ver',t);
