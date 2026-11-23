@@ -113,6 +113,15 @@ table.t td.n{text-align:right;white-space:nowrap}
 dialog{border:0;padding:0;background:transparent;max-width:96vw;max-height:92vh}
 dialog::backdrop{background:rgba(0,0,0,.85)}
 dialog img{max-width:96vw;max-height:92vh;display:block}
+#dlg{width:100vw;height:100vh;height:100dvh;max-width:none;max-height:none;margin:0}
+#dlgStrip{display:flex;width:100%;height:100%;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+#dlgStrip::-webkit-scrollbar{display:none}
+#dlgStrip img{flex:0 0 100%;width:100%;height:100%;max-width:none;max-height:none;object-fit:contain;scroll-snap-align:center;scroll-snap-stop:always}
+#dlgCnt{position:absolute;top:12px;left:50%;transform:translateX(-50%);color:#fff;background:rgba(0,0,0,.5);border-radius:14px;padding:3px 12px;font-size:14px;pointer-events:none}
+#dlgX{position:absolute;top:8px;right:10px;width:40px;height:40px;border:0;border-radius:50%;background:rgba(0,0,0,.5);color:#fff;font-size:20px;cursor:pointer}
+.dnav{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:64px;border:0;border-radius:8px;background:rgba(0,0,0,.45);color:#fff;font-size:34px;cursor:pointer;display:none}
+#dlgP{left:8px}#dlgN{right:8px}
+@media (hover:hover) and (pointer:fine){.dnav{display:block}}
 .pick{border:1px solid var(--line);border-radius:10px;background:var(--paper);padding:16px;width:min(340px,92vw);color:var(--ink)}
 .pick h2{font-size:var(--fs-b);margin:0 0 4px}
 .pick .g{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:12px}
@@ -219,7 +228,7 @@ dialog img{max-width:96vw;max-height:92vh;display:block}
 </div>
 <div class="wrap pbrand" style="padding-bottom:0">HYUNDAI IMC 중공업팀</div>
 <main class="wrap" id="app"><div class="load">불러오는 중입니다…</div></main>
-<dialog id="dlg"><img id="dlgImg" alt="사진"></dialog>
+<dialog id="dlg"><div id="dlgStrip"></div><div id="dlgCnt"></div><button type="button" id="dlgX" aria-label="닫기">✕</button><button type="button" id="dlgP" class="dnav" aria-label="이전 사진">‹</button><button type="button" id="dlgN" class="dnav" aria-label="다음 사진">›</button></dialog>
 <dialog id="bellDlg"><div class="pick"><h2>알림 설정</h2><div class="mute" id="bellMsg"></div>
   <div class="bo" style="align-items:center;justify-content:space-between;padding-top:10px"><span class="mute" id="bellName"></span><button class="btn ghost" id="bellWho" type="button">이름 고르기</button></div>
   <div id="bellOpts" style="margin-top:2px"><label class="bo"><input type="checkbox" id="bJj"> 정정 일지 — 새 요청·결과가 올라올 때</label><label class="bo"><input type="checkbox" id="bSf"> 안전 개선 — 새 문제점·개선 과정·의견이 올라올 때</label></div>
@@ -276,7 +285,16 @@ function whoShow(v){v=String(v||'');if(!v)return '';var p=v.split(/[,，、\n]+/
   if(!p.length||p.some(function(x){return TWR.test(x)||/\s|\//.test(x)||x.length>5}))return v;return whoFmt(p)}
 
 function me(){var n=lsGet('sv-name');return D.viewers&&D.viewers.some(function(v){return v.name===n})?n:''}
-document.addEventListener('click',function(e){var b=e.target.closest('[data-big]');if(b){$('dlgImg').src=pubUrl(b.dataset.big);$('dlg').showModal()}});
+var gal={n:0};
+function galOpen(box,sel,attr,conv,start){var els=[].slice.call(box.querySelectorAll(sel)),urls=els.map(function(x){return conv(x.getAttribute(attr))});var st=$('dlgStrip');st.innerHTML=urls.map(function(u){return '<img src="'+esc(u)+'" alt="사진">'}).join('');gal.n=urls.length;$('dlgCnt').style.display=urls.length>1?'':'none';document.querySelectorAll('.dnav').forEach(function(b){b.style.visibility=urls.length>1?'':'hidden'});$('dlg').showModal();var i=Math.max(0,els.indexOf(start));st.style.scrollBehavior='auto';st.scrollLeft=i*st.clientWidth;galCnt()}
+function galIdx(){var st=$('dlgStrip');return Math.round(st.scrollLeft/Math.max(1,st.clientWidth))}
+function galCnt(){$('dlgCnt').textContent=(galIdx()+1)+' / '+gal.n}
+function galGo(d){var st=$('dlgStrip'),i=Math.min(gal.n-1,Math.max(0,galIdx()+d));st.style.scrollBehavior='auto';st.scrollLeft=i*st.clientWidth;galCnt()}
+$('dlgStrip').addEventListener('scroll',galCnt);
+$('dlgP').onclick=function(e){e.stopPropagation();galGo(-1)};$('dlgN').onclick=function(e){e.stopPropagation();galGo(1)};
+$('dlgX').onclick=function(e){e.stopPropagation();$('dlg').close()};
+document.addEventListener('keydown',function(e){if(!$('dlg').open)return;if(e.key==='ArrowLeft')galGo(-1);else if(e.key==='ArrowRight')galGo(1)});
+document.addEventListener('click',function(e){var b=e.target.closest('[data-big]');if(b){galOpen(b.parentNode,'[data-big]','data-big',pubUrl,b)}});
 $('dlg').onclick=function(){$('dlg').close()};
 
 /* ---------- 인쇄·엑셀 단추(컴퓨터 화면만) ---------- */
@@ -408,7 +426,7 @@ function jLoad(){var out=[],off=0;
   return nx().then(function(){J.rows=out.map(jRec);J.at=Date.now()})}
 function jDate(a){return a?(+a.slice(5,7))+'/'+(+a.slice(8,10))+' '+a.slice(11,16):''}
 function jPh(ps,cap){return ps&&ps.length?'<div class="sec" style="margin:14px 0 4px">'+cap+' '+ps.length+'</div><div class="jph n'+Math.min(ps.length,2)+'">'+ps.map(function(p){return '<img src="'+esc(jUrl(p))+'" data-jbig="'+esc(jUrl(p))+'" alt="사진" loading="lazy">'}).join('')+'</div>':''}
-document.addEventListener('click',function(e){var b=e.target.closest('[data-jbig]');if(b){$('dlgImg').src=b.dataset.jbig;$('dlg').showModal()}});
+document.addEventListener('click',function(e){var b=e.target.closest('[data-jbig]');if(b){var box=b.closest('.jph');var all=box&&box.parentNode;galOpen(all&&all.querySelectorAll('[data-jbig]').length>1?all:b.parentNode,'[data-jbig]','data-jbig',function(x){return x},b)}});
 function setMenu(k){$('mJ').classList.toggle('on',k==='jj');$('mS').classList.toggle('on',k!=='jj')}
 function jRoute(id){
   if(window.matchMedia&&matchMedia('(min-width:900px)').matches){location.replace('view.html');return}
